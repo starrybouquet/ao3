@@ -7,3 +7,6 @@ dist
 .cache
 .coverage
 .tox
+
+# Apple bloat
+.DS_Store
