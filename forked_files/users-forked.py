@@ -1,4 +1,14 @@
-from .pulldata_private import AO3UserHandler
+# -*- encoding: utf-8
+
+from datetime import datetime
+import collections
+import itertools
+import re
+
+from bs4 import BeautifulSoup, Tag
+import requests
+
+from .works import Work
 
 
 ReadingHistoryItem = collections.namedtuple(
@@ -9,8 +19,28 @@ class User(object):
 
     def __init__(self, username, password, sess=None):
         self.username = username
-        self.io_handler = AO3UserHandler(self)
 
+        if sess == None:
+            sess = requests.Session()
+
+        req = sess.get('https://archiveofourown.org')
+        soup = BeautifulSoup(req.text, features='html.parser')
+
+        authenticity_token = soup.find('input', {'name': 'authenticity_token'})['value']
+
+        req = sess.post('https://archiveofourown.org/user_sessions', params={
+            'authenticity_token': authenticity_token,
+            'user_session[login]': username,
+            'user_session[password]': password,
+        })
+
+        # Unfortunately AO3 doesn't use HTTP status codes to communicate
+        # results -- it's a 200 even if the login fails.
+        if 'Please try again' in req.text:
+            raise RuntimeError(
+                'Error logging in to AO3; is your password correct?')
+
+        self.sess = sess
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
 
@@ -26,11 +56,13 @@ class User(object):
             % self.username)
 
         bookmarks = []
-        num_works = 0
 
-        page_soups = self.io_handler.get_bookmark_pages(self.username, 'bookmarks')
-        for page in page_soups:
+        num_works = 0
+        for page_no in itertools.count(start=1):
             # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
+
+            req = self.sess.get(api_url % page_no)
+            soup = BeautifulSoup(req.text, features='html.parser')
 
             # The entries are stored in a list of the form:
             #
@@ -44,8 +76,8 @@ class User(object):
             #       ...
             #     </o
 
-            ol_tag = page.find('ol', attrs={'class': 'bookmark'})
-
+            ol_tag = soup.find('ol', attrs={'class': 'bookmark'})
+            
 
             for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
                 num_works = num_works + 1
@@ -71,6 +103,22 @@ class User(object):
                         pass
                     else:
                         raise
+
+
+            # The pagination button at the end of the page is of the form
+            #
+            #     <li class="next" title="next"> ... </li>
+            #
+            # If there's another page of results, this contains an <a> tag
+            # pointing to the next page.  Otherwise, it contains a <span>
+            # tag with the 'disabled' class.
+            try:
+                next_button = soup.find('li', attrs={'class': 'next'})
+                if next_button.find('span', attrs={'class': 'disabled'}):
+                    break
+            except:
+                # In case of absence of "next"
+                break
 
         return bookmarks
 
@@ -111,9 +159,7 @@ class User(object):
             'https://archiveofourown.org/users/%s/readings?page=%%d' %
             self.username)
 
-        hist_pages = self.io_handler.get_pages(self.username, 'history')
-
-        for page in hist_pages:
+        for page_no in itertools.count(start=1):
             req = self.sess.get(api_url % page_no)
             soup = BeautifulSoup(req.text, features='html.parser')
 

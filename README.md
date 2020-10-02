@@ -15,8 +15,6 @@ Following the advice of the following July 2020 note, I am attempting to restruc
 
 (via [alexwlchan](https://github.com/alexwlchan/ao3))
 
-In the future, I may also try to incorporate some unofficial API code for [fanfiction.net](fanfiction.net) to get a wider array of fandom data.
-
 **Note:** I am an engineering major, not a programmer, and I am much more comfortable with data science than with HTML or I/O. I also have very limited experience with creating usable packages. That being said, fandom analysis and history *is* very much my wheelhouse, so hopefully that interest makes up for some of my lack of knowledge. We'll see.
 
 ## Motivation

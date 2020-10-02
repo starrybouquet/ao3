@@ -2,6 +2,7 @@
 *.egg-info
 build
 dist
+__pycache__
 
 # Test files
 .cache
