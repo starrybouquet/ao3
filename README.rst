@@ -5,6 +5,8 @@ FWIW, if I were to work on this again, I'd start by decoupling the HTML parsing 
 
 I hope this repo serves as a useful pointer, but don't expect updates any time soon.
 
+Testing
+
 ----
 
 ao3.py
@@ -46,7 +48,7 @@ Create an API instance:
 
 .. code-block:: pycon
 
-   >>> from ao3 import AO3, 
+   >>> from ao3 import AO3,
    >>> api = AO3()
 
 Looking up information about a work
@@ -155,7 +157,7 @@ available to the public:
 
    >>> api.login('username', 'password')
 
-If you have Viewing History enabled, you can get a list of work IDs from 
+If you have Viewing History enabled, you can get a list of work IDs from
 that history, like so:
 
 .. code-block:: pycon
@@ -206,10 +208,10 @@ last run, you could make this quite efficient.  Exercise for the reader.)
 Looking up your bookmarks
 -------------------------
 
-If you login as a user you can look up the bookmarks for that user. You can 
+If you login as a user you can look up the bookmarks for that user. You can
 get the bookmarks as a list of AO3 id numbers or as a list of work objects.
 
-Warning: This is very slow as as the api has to go back and retrieve every 
+Warning: This is very slow as as the api has to go back and retrieve every
 page.
 
 Get the bookmarks as works:
