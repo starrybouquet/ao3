@@ -1,20 +1,69 @@
 import requests
 
 class AO3UserHandler():
+    """Handler for User class I/O needs.
+
+    Parameters
+    ----------
+    user : User() object
+        User of handler.
+    sess : requests.Session() object
+        requests Session to use
+
+    Attributes
+    ----------
+    user : User() object
+        User of handler.
+    page_urls : dict
+        Class attribute. List of page url skeletons.
+    sess : requests.Session() object
+        requests Session to use for all queries
+
+    """
     '''connects to User class; handles I/O'''
 
     self.page_urls = {'bookmarks': 'https://archiveofourown.org/users/%s/bookmarks?page=%%d',
                       'history': 'https://archiveofourown.org/users/%s/readings?page=%%d'}
 
     def __init__(self, user, sess=None):
+        """AO3UserHandler(User user, [Session sess]) --> AO3UserHandler
+
+        Parameters
+        ----------
+        user : User() object
+            User of handler.
+        sess : requests.Session() object
+            requests Session to use.
+
+        Returns
+        -------
+        AO3UserHandler
+            Handler for User I/O needs.
+
+        """
 
         if sess == None:
             self.sess = requests.Session()
         else:
             self.sess = sess
-        self.master = user
+        self.user = user
 
     def authenticate(username, password):
+        """AO3UserHandler.authenticate(str username, str password) --> str
+
+        Parameters
+        ----------
+        username : str
+            User username.
+        password : type
+            User password (does not check if it is correct).
+
+        Returns
+        -------
+        str
+            String describing outcome of authentication.
+
+        """
 
         req = self.sess.get('https://archiveofourown.org')
         soup = BeautifulSoup(req.text, features='html.parser')
@@ -36,10 +85,21 @@ class AO3UserHandler():
             return "Authentication successful. You are logged in."
 
     def get_pages(self, username, type):
-        """
-        Returns HTML of the user's pages of whatever type specified. Types allowed: 'bookmarks', 'history'
+        """AO3UserHandler.get_pages(str username, str type) --> list
+        Returns list of BeautifulSoups of specified type of user pages. User must be logged in to see private bookmarks.
 
-        User must be logged in to see private bookmarks.
+        Parameters
+        ----------
+        username : str
+            User username.
+        type : str
+            Type of page to get. Current types: 'bookmarks', 'history' (see class attribute page_urls)
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
         """
 
         api_url = (

@@ -1,3 +1,5 @@
+import re
+
 from .user_io import AO3UserHandler
 
 
@@ -6,19 +8,47 @@ ReadingHistoryItem = collections.namedtuple(
 
 
 class User(object):
+    """AO3 User object.
 
-    def __init__(self, username, password, sess=None):
+    Parameters
+    ----------
+    username : str
+        AO3 username.
+    password : str
+        AO3 password. Does not check if it is correct.
+    public_handler : AO3PublicHandler()
+        Public handler for loading works, etc.
+    sess : Session
+        requests Session to use
+
+    Attributes
+    ----------
+    io_handler : AO3UserHandler
+        Handler for the user's I/O
+    username : str
+        AO3 username.
+
+    """
+
+    def __init__(self, username, password, public_handler, sess=None):
         self.username = username
         self.io_handler = AO3UserHandler(self, sess)
+        self.public_handler = public_handler
 
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
 
     def bookmarks_ids(self):
-        """
+        """User.bookmark_ids() --> list
+
         Returns a list of the user's bookmarks' ids. Ignores external work bookmarks.
 
         User must be logged in to see private bookmarks.
+
+        Returns
+        -------
+        list
+            List of work ids bookmarked by the user.
         """
 
         bookmarks = []
@@ -70,13 +100,20 @@ class User(object):
 
         return bookmarks
 
-    def bookmarks(self):
-        """
+    def load_bookmarks(self):
+        """User.load_bookmarks() --> list
+
         Returns a list of the user's bookmarks as Work objects.
 
         Takes forever.
 
         User must be logged in to see private bookmarks.
+
+        Returns
+        -------
+        list
+            List of user's book as Work objects.
+
         """
 
         bookmark_total = 0
@@ -84,7 +121,7 @@ class User(object):
         bookmarks = []
 
         for bookmark_id in bookmark_ids:
-            work = Work(bookmark_id, self.sess)
+            work = Work(bookmark_id, io_handler=self.public_handler)
             bookmarks.append(work)
 
             bookmark_total = bookmark_total + 1
@@ -93,12 +130,18 @@ class User(object):
         return bookmarks
 
     def reading_history(self):
-        """Returns a list of articles in the user's reading history.
+        """User.reading_history() --> list
 
-        This requires the user to turn on the Viewing History feature.
+        Returns a list of articles in the user's reading history.
 
-        This generates a series of ``ReadingHistoryItem`` instances,
-        a 2-tuple ``(work_id, last_read)``.
+        This requires the user to turn on the Viewing History feature..
+
+        Returns
+        -------
+        list
+            List of ``ReadingHistoryItem`` instances,
+            a 2-tuple ``(work_id, last_read)``.
+
         """
         # TODO: What happens if you don't have this feature enabled?
 

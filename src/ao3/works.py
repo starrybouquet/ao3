@@ -17,6 +17,29 @@ class RestrictedWork(Exception):
 
 
 class Work(object):
+    """Short summary.
+
+    Parameters
+    ----------
+    id : str
+        Work id.
+    [io_handler] : AO3PublicHandler object
+        Public handler for accessing data of work.
+    [sess] : Session object
+        If not passing in an AO3PublicHandler, then at least provide a Session object to pass to the AO3PublicHandler initializer.
+
+    Attributes
+    ----------
+    _io_handler : AO3PublicHandler
+        Public handler for accessing work data.
+    _html : str
+        HTML of work in string form
+    _soup : BeautifulSoup object
+        HTML soup of work in BeautifulSoup form.
+    id : str
+        work id
+
+    """
 
     def __init__(self, id, io_handler=None, sess=None):
         self.id = id

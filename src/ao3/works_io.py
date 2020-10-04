@@ -1,26 +1,60 @@
 import requests
 
 class AO3PublicHandler():
-    '''Handler for pulling public AO3 data.'''
+    """Handler for pulling public AO3 data.
 
-    def __init__(self, sess, first_client):
+    Parameters
+    ----------
+    sess : Session
+        requests Session to use
+    first_client : Work or User
+        Whichever Work or User initializes this handler.
+
+    Attributes
+    ----------
+    clients : list
+        list of Works and Users using this handler
+    sess : Session
+        requests Session used
+
+    """
+
+    def __init__(self, sess, init_client):
+        """AO3PublicHandler(Session sess, AO3 init_client) --> AO3PublicHandler
+
+        Parameters
+        ----------
+        sess : Session
+            Session to use.
+        init_client : AO3 object
+            Parent AO3 instance.
+        """
 
         if sess == None:
             self.sess = requests.Session()
         else:
             self.sess = sess
 
-        self.clients = [first_client]
+        self.init_client = init_client
 
     def __eq__(self, other):
-        return (self.sess == other.sess)
-
-    def add_client(self, new_client):
-        self.clients.append(new_client)
-
-        return self.clients
+        """Returns True if both AO3PublicHandlers have the same Session and same parent AO3 instance"""
+        return ((self.sess == other.sess) and (self.init_client == other.init_client))
 
     def get_work_soup(self, work_id):
+        """Get the BeautifulSoup of a given work.
+
+        Parameters
+        ----------
+        work_id : str or int
+            AO3 ID of work.
+
+        Returns
+        -------
+        BeautifulSoup object
+            Soup of work.
+
+        """
         req = self.sess.get('https://archiveofourown.org/works/%s' % work_id)
 
         if req.status_code == 404:
@@ -46,16 +80,3 @@ class AO3PublicHandler():
             raise RestrictedWork('Looking at work ID %s requires login')
 
         return req.text
-
-class AO3PrivateHandler(AO3PublicHandler):
-    '''Handler for accessing AO3 data only available to users (primarily restricted works)'''
-    pass
-
-    # See below comment from AO3PublicHandler.__init__() about this
-
-    # Check for restricted works, which require you to be logged in
-    # first.  See https://archiveofourown.org/admin_posts/138
-    # To make this work, we'd need to have a common Session object
-    # across all the API classes.  Not impossible, but fiddlier than I
-    # care to implement right now.
-    # TODO: Fix this.
