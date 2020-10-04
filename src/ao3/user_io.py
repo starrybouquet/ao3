@@ -8,8 +8,10 @@ class AO3UserHandler():
 
     def __init__(self, user, sess=None):
 
-        if self.sess == None:
+        if sess == None:
             self.sess = requests.Session()
+        else:
+            self.sess = sess
         self.master = user
 
     def authenticate(username, password):
@@ -47,7 +49,7 @@ class AO3UserHandler():
         soups = [] # list of html soups saved
 
         for page_no in itertools.count(start=1):
-            # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
+            print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " work ids found.")
 
             req = self.sess.get(api_url % page_no)
             soup = BeautifulSoup(req.text, features='html.parser')

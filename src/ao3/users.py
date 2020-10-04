@@ -1,4 +1,4 @@
-from .pulldata_private import AO3UserHandler
+from .user_io import AO3UserHandler
 
 
 ReadingHistoryItem = collections.namedtuple(
@@ -9,7 +9,7 @@ class User(object):
 
     def __init__(self, username, password, sess=None):
         self.username = username
-        self.io_handler = AO3UserHandler(self)
+        self.io_handler = AO3UserHandler(self, sess)
 
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
@@ -20,10 +20,6 @@ class User(object):
 
         User must be logged in to see private bookmarks.
         """
-
-        api_url = (
-            'https://archiveofourown.org/users/%s/bookmarks?page=%%d'
-            % self.username)
 
         bookmarks = []
         num_works = 0
@@ -112,10 +108,9 @@ class User(object):
             self.username)
 
         hist_pages = self.io_handler.get_pages(self.username, 'history')
+        history_items = []
 
         for page in hist_pages:
-            req = self.sess.get(api_url % page_no)
-            soup = BeautifulSoup(req.text, features='html.parser')
 
             # The entries are stored in a list of the form:
             #
@@ -150,30 +145,6 @@ class User(object):
                         h4_tag.contents[2]).group(0)
                     date = datetime.strptime(date_str, '%d %b %Y').date()
 
-                    yield work_id, date
-                except KeyError:
-                    # A deleted work shows up as
-                    #
-                    #      <li class="deleted reading work blurb group">
-                    #
-                    # There's nothing that we can do about that, so just skip
-                    # over it.
-                    if 'deleted' in li_tag.attrs['class']:
-                        pass
-                    else:
-                        raise
+                    history_items.append(ReadingHistoryItem(work_id, date))
 
-            # The pagination button at the end of the page is of the form
-            #
-            #     <li class="next" title="next"> ... </li>
-            #
-            # If there's another page of results, this contains an <a> tag
-            # pointing to the next page.  Otherwise, it contains a <span>
-            # tag with the 'disabled' class.
-            try:
-                next_button = soup.find('li', attrs={'class': 'next'})
-                if next_button.find('span', attrs={'class': 'disabled'}):
-                    break
-            except:
-                # In case of absence of "next"
-                break
+        return history_items
