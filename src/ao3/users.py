@@ -1,6 +1,7 @@
 import re
+import collections
 
-from .user_io import AO3UserHandler
+from user_io import AO3UserHandler
 
 
 ReadingHistoryItem = collections.namedtuple(
@@ -54,7 +55,7 @@ class User(object):
         bookmarks = []
         num_works = 0
 
-        page_soups = self.io_handler.get_bookmark_pages(self.username, 'bookmarks')
+        page_soups = self.io_handler.get_pages(self.username, 'bookmarks')
         for page in page_soups:
             # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
 
@@ -189,5 +190,16 @@ class User(object):
                     date = datetime.strptime(date_str, '%d %b %Y').date()
 
                     history_items.append(ReadingHistoryItem(work_id, date))
+                except KeyError:
+                    # A deleted work shows up as
+                    #
+                    #      <li class="deleted reading work blurb group">
+                    #
+                    # There's nothing that we can do about that, so just skip
+                    # over it.
+                    if 'deleted' in li_tag.attrs['class']:
+                        pass
+                    else:
+                        raise
 
         return history_items

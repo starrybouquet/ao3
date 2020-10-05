@@ -1,5 +1,12 @@
 import requests
 
+class WorkNotFound(Exception):
+    pass
+
+
+class RestrictedWork(Exception):
+    pass
+
 class AO3PublicHandler():
     """Handler for pulling public AO3 data.
 
@@ -37,10 +44,6 @@ class AO3PublicHandler():
 
         self.init_client = init_client
 
-    def __eq__(self, other):
-        """Returns True if both AO3PublicHandlers have the same Session and same parent AO3 instance"""
-        return ((self.sess == other.sess) and (self.init_client == other.init_client))
-
     def get_work_soup(self, work_id):
         """Get the BeautifulSoup of a given work.
 
@@ -77,6 +80,6 @@ class AO3PublicHandler():
         # care to implement right now.
         # TODO: Fix this.
         if 'This work is only available to registered users' in req.text:
-            raise RestrictedWork('Looking at work ID %s requires login')
+            raise RestrictedWork('Looking at work ID {} requires login'.format(work_id))
 
         return req.text

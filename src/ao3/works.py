@@ -5,15 +5,7 @@ import json
 
 from bs4 import BeautifulSoup, Tag
 
-from .works_io import AO3PublicHandler
-
-
-class WorkNotFound(Exception):
-    pass
-
-
-class RestrictedWork(Exception):
-    pass
+from works_io import AO3PublicHandler
 
 
 class Work(object):
@@ -23,10 +15,16 @@ class Work(object):
     ----------
     id : str
         Work id.
-    [io_handler] : AO3PublicHandler object
+    [io_handler] : AO3PublicHandler object; default None
         Public handler for accessing data of work.
-    [sess] : Session object
-        If not passing in an AO3PublicHandler, then at least provide a Session object to pass to the AO3PublicHandler initializer.
+    [sess] : Session object; default None
+        If not passing in an AO3PublicHandler,
+        then at least provide a Session object to pass to
+        the AO3PublicHandler initializer.
+    [load] : bool; default True
+        If true, loads work data using I/O handler on init.
+        Otherwise, does not load until load_data is called explicitly.
+        This allows for full separation of I/O and parsing.
 
     Attributes
     ----------
@@ -41,7 +39,7 @@ class Work(object):
 
     """
 
-    def __init__(self, id, io_handler=None, sess=None):
+    def __init__(self, id, io_handler=None, sess=None, load=True):
         self.id = id
 
         # Fetch the HTML for this work
@@ -52,8 +50,11 @@ class Work(object):
 
         self.id = id
 
-        self._html = self._io_handler.get_work_soup(self.id)
-        self._soup = BeautifulSoup(self._html, 'html.parser')
+        if load == True:
+            self.load_data()
+        else:
+            self._html = 'HTML not loaded. Please call load_data() function.'
+            self._soup = BeautifulSoup('Nothing here...', 'html.parser')
 
     def __repr__(self):
         return '%s(id=%r)' % (type(self).__name__, self.id)
@@ -66,6 +67,16 @@ class Work(object):
 
     def __hash__(self):
         return hash(repr(self))
+
+    def load_data(self):
+        """Load data using I/O handler"""
+        try:
+            self._html = self._io_handler.get_work_soup(self.id)
+            self._soup = BeautifulSoup(self._html, 'html.parser')
+            return 'Work loaded'
+        except Exception as e: # if exception occurs, data was not loaded properly
+            print('Work could not be loaded.')
+            raise e
 
     @property
     def url(self):

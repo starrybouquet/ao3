@@ -1,4 +1,7 @@
 import requests
+import itertools
+
+from bs4 import BeautifulSoup
 
 class AO3UserHandler():
     """Handler for User class I/O needs.
@@ -22,7 +25,7 @@ class AO3UserHandler():
     """
     '''connects to User class; handles I/O'''
 
-    self.page_urls = {'bookmarks': 'https://archiveofourown.org/users/%s/bookmarks?page=%%d',
+    page_urls = {'bookmarks': 'https://archiveofourown.org/users/%s/bookmarks?page=%%d',
                       'history': 'https://archiveofourown.org/users/%s/readings?page=%%d'}
 
     def __init__(self, user, sess=None):
@@ -104,12 +107,13 @@ class AO3UserHandler():
 
         api_url = (
             self.page_urls[type]
-            % self.username)
+            % username)
 
         soups = [] # list of html soups saved
+        num_soups = 0
 
         for page_no in itertools.count(start=1):
-            print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " work ids found.")
+            print("Finding page: \t" + str(page_no) + " of bookmarks.")
 
             req = self.sess.get(api_url % page_no)
             soup = BeautifulSoup(req.text, features='html.parser')

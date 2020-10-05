@@ -2,10 +2,10 @@
 
 import requests
 
-from . import utils
-from .users import User
-from .works import Work
-from .works_io import AO3PublicHandler
+from utils import *
+from users import User
+from works import Work
+from works_io import AO3PublicHandler
 
 class AO3(object):
     """A scraper for the Archive of Our Own (AO3)."""
