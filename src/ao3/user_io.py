@@ -51,7 +51,7 @@ class AO3UserHandler():
             self.sess = sess
         self.user = user
 
-    def authenticate(username, password):
+    def authenticate(self, username, password):
         """AO3UserHandler.authenticate(str username, str password) --> str
 
         Parameters
@@ -127,9 +127,14 @@ class AO3UserHandler():
             # pointing to the next page.  Otherwise, it contains a <span>
             # tag with the 'disabled' class.
             try:
+                print("found next button")
                 next_button = soup.find('li', attrs={'class': 'next'})
                 if next_button.find('span', attrs={'class': 'disabled'}):
+                    print("next button was disabled")
                     break
             except:
                 # In case of absence of "next"
+                print("no next button")
                 break
+
+        return soups

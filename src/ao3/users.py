@@ -31,13 +31,17 @@ class User(object):
 
     """
 
-    def __init__(self, username, password, public_handler, sess=None):
+    def __init__(self, username, public_handler, sess=None):
         self.username = username
         self.io_handler = AO3UserHandler(self, sess)
         self.public_handler = public_handler
 
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
+
+    def authenticate_handler(self, password):
+        print("Authenticating...")
+        print(self.io_handler.authenticate(self.username, password))
 
     def bookmarks_ids(self):
         """User.bookmark_ids() --> list

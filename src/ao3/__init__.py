@@ -18,13 +18,15 @@ class AO3(object):
     def __repr__(self):
         return '%s()' % (type(self).__name__)
 
-    def work(self, id):
+    def work(self, id, io_handler=None):
         """Look up a work that's been posted to AO3.
 
         :param id: the work ID.  In the URL to a work, this is the number.
             e.g. the work ID of http://archiveofourown.org/works/1234 is 1234.
         """
-        return Work(id=id, io_handler=self.public_handler)
+        if io_handler == None:
+            io_handler = self.public_handler
+        return Work(id=id, io_handler=io_handler)
 
     def login(self, username, password):
         """Log in to the archive.
@@ -33,4 +35,5 @@ class AO3(object):
         logged in.  This doesn't do any checking that the password is correct.
 
         """
-        self.user = User(username=username, password=password, public_handler=self.public_handler, sess=self.session)
+        self.user = User(username=username, public_handler=self.public_handler, sess=self.session)
+        self.user.authenticate_handler(password)
