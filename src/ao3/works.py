@@ -5,8 +5,68 @@ import json
 
 from bs4 import BeautifulSoup, Tag
 
-from works_io import AO3PublicHandler
+from handlers import AO3Handler
 
+def iterate_pages(page_soups, class_name, save_HTML=False):
+    """Iterate over pages of lists of works.
+    Options for class_name: 'bookmark'
+                            'work'
+    """
+    if save_HTML:
+        works = []
+    ids = []
+    num_works = 0
+
+    for page in page_soups:
+        # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
+
+        # The entries are stored in a list of the form:
+        #
+        #     <ol class="bookmark index group">
+        #       <li id="bookmark_12345" class="bookmark blurb group" role="article">
+        #         ...
+        #       </li>
+        #       <li id="bookmark_67890" class="bookmark blurb group" role="article">
+        #         ...
+        #       </li>
+        #       ...
+        #     </o
+
+        ol_tag = page.find('ol', attrs={'class': class_name})
+
+
+        for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
+            num_works = num_works + 1
+            try:
+                # <h4 class="heading">
+                #     <a href="/works/12345678">Work Title</a>
+                #     <a href="/users/authorname/pseuds/authorpseud" rel="author">Author Name</a>
+                # </h4>
+
+                for h4_tag in li_tag.findAll('h4', attrs={'class': 'heading'}):
+                    for link in h4_tag.findAll('a'):
+                        if ('works' in link.get('href')) and not ('external_works' in link.get('href')):
+                            work_id = link.get('href').replace('/works/', '')
+                            ids.append(work_id)
+                if save_HTML:
+                    works.append(li_tag)
+
+            except KeyError:
+                # A deleted work shows up as
+                #
+                #      <li class="deleted reading work blurb group">
+                #
+                # There's nothing that we can do about that, so just skip
+                # over it.
+                if 'deleted' in li_tag.attrs['class']:
+                    pass
+                else:
+                    raise
+
+    if save_HTML:
+        return (ids, works)
+    else:
+        return ids
 
 class Work(object):
     """Short summary.
@@ -17,18 +77,16 @@ class Work(object):
         Work id.
     [io_handler] : AO3PublicHandler object; default None
         Public handler for accessing data of work.
-    [sess] : Session object; default None
-        If not passing in an AO3PublicHandler,
-        then at least provide a Session object to pass to
-        the AO3PublicHandler initializer.
     [load] : bool; default True
         If true, loads work data using I/O handler on init.
         Otherwise, does not load until load_data is called explicitly.
         This allows for full separation of I/O and parsing.
+    [soup] : BeautifulSoup object; default None
+        If not None, uses this html rather than loading its own data.
 
     Attributes
     ----------
-    _io_handler : AO3PublicHandler
+    _io_handler : AO3Handler
         Public handler for accessing work data.
     _html : str
         HTML of work in string form
@@ -39,22 +97,24 @@ class Work(object):
 
     """
 
-    def __init__(self, id, io_handler=None, sess=None, load=True):
+    def __init__(self, id, io_handler, load=True, soup=None):
         self.id = id
 
-        # Fetch the HTML for this work
-        if io_handler == None:
-            self._io_handler = AO3PublicHandler(sess, self)
-        else:
-            self._io_handler = io_handler
+        self._io_handler = io_handler
 
         self.id = id
 
         if load == True:
             self.load_data()
+            self._source = 'work'
+        elif soup != None:
+            self._soup = soup
+            self._html = str(self._soup)
+            self._source = 'search'
         else:
             self._html = 'HTML not loaded. Please call load_data() function.'
             self._soup = BeautifulSoup('Nothing here...', 'html.parser')
+            self._source = 'none'
 
     def __repr__(self):
         return '%s(id=%r)' % (type(self).__name__, self.id)
@@ -86,29 +146,37 @@ class Work(object):
     @property
     def title(self):
         """The title of this work."""
+        if self._source == 'work':
         # The title of the work is stored in an <h2> tag of the form
         #
         #     <h2 class="title heading">[title]</h2>
         #
         # TODO: Retrieve title from restricted work
-        title_tag = self._soup.find('h2', attrs={'class': 'title'})
-        return title_tag.contents[0].strip()
+            title_tag = self._soup.find('h2', attrs={'class': 'title'})
+            return title_tag.contents[0].strip()
+        elif self._source == 'search':
+            title_tag = self._soup.find('h4', attrs={'class': 'heading'})
+            return title_tag.a.get_text().strip()
 
     @property
     def author(self):
         """The author of this work."""
-        # The author of the work is kept in the byline, in the form
-        #
-        #     <h3 class="byline heading">
-        #       <a href="/users/[author_name]" rel="author">[author_name]</a>
-        #     </h3>
-        #
-        byline_tag = self._soup.find('h3', attrs={'class': 'byline'})
-        a_tag = [t
-                 for t in byline_tag.contents
-                 if isinstance(t, Tag)]
-        assert len(a_tag) == 1
-        return a_tag[0].contents[0].strip()
+        if self._source == 'work':
+            # The author of the work is kept in the byline, in the form
+            #
+            #     <h3 class="byline heading">
+            #       <a href="/users/[author_name]" rel="author">[author_name]</a>
+            #     </h3>
+            #
+            byline_tag = self._soup.find('h3', attrs={'class': 'byline'})
+            a_tag = [t
+                     for t in byline_tag.contents
+                     if isinstance(t, Tag)]
+            assert len(a_tag) == 1
+            return a_tag[0].contents[0].strip()
+        elif self._source == 'search':
+            author_link = self._soup.find('a', attrs={'rel': 'author'})
+            return author_link.get_text().strip()
 
     @property
     def summary(self):
@@ -122,8 +190,11 @@ class Work(object):
         #       </blockquote>
         #     </div>
         #
-        summary_div = self._soup.find('div', attrs={'class': 'summary'})
-        blockquote = summary_div.find('blockquote')
+        if self._source == 'work':
+            summary_div = self._soup.find('div', attrs={'class': 'summary'})
+            blockquote = summary_div.find('blockquote')
+        elif self._source == 'search':
+            blockquote = self._soup.find('blockquote', attrs={'class': 'summary'})
         return blockquote.renderContents().decode('utf8').strip()
 
     def _lookup_stat(self, class_name, default=None):
@@ -185,7 +256,11 @@ class Work(object):
     @property
     def fandoms(self):
         """The fandoms in this work."""
-        return self._lookup_stat('fandom', [])
+        if self._source == 'work':
+            return self._lookup_stat('fandom', [])
+        elif self._source == 'search':
+            fandom_tag = self._soup.find('h5', attrs={'class': 'fandoms'})
+            return fandom_tag.a.get_text().strip()
 
     @property
     def relationship(self):
@@ -210,7 +285,10 @@ class Work(object):
     @property
     def published(self):
         """The date when this work was published."""
-        date_str = self._lookup_stat('published')
+        if self._source == 'work':
+            date_str = self._lookup_stat('published')
+        elif self._source == 'search':
+            date_str = self._soup.find('p', attrs={'class': 'datetime'}).get_text().strip()
         date_val = datetime.strptime(date_str, '%Y-%m-%d')
         return date_val.date()
 
@@ -218,6 +296,16 @@ class Work(object):
     def words(self):
         """The number of words in this work."""
         return int(self._lookup_stat('words', 0))
+
+    @property
+    def posted_chapters(self):
+        """The number of chapters posted."""
+        pass
+
+    @property
+    def total_chapters(self):
+        """The number of total chapters, or ? if unknown."""
+        pass
 
     @property
     def comments(self):
@@ -230,8 +318,14 @@ class Work(object):
         return int(self._lookup_stat('kudos', 0))
 
     @property
+    def complete(self):
+        """Returns True if posted chapters = total chapters, False if not"""
+        return (self.posted_chapters == self.total_chapters)
+
+    @property
     def kudos_left_by(self):
-        """Returns a list of usernames who left kudos on this work."""
+        """Returns a list of usernames who left kudos on this work.
+        requires work to be loaded, as the kudos left are not available on the search result"""
         # The list of usernames who left kudos is stored in the following
         # format:
         #

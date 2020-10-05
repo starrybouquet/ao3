@@ -3,56 +3,52 @@ import itertools
 
 from bs4 import BeautifulSoup
 
-class AO3UserHandler():
-    """Handler for User class I/O needs.
+class AO3Handler():
+    """Handler for pulling AO3 data.
 
     Parameters
     ----------
-    user : User() object
-        User of handler.
-    sess : requests.Session() object
+    sess : Session
         requests Session to use
+    first_client : Work or User
+        Whichever Work or User initializes this handler.
 
     Attributes
     ----------
-    user : User() object
-        User of handler.
     page_urls : dict
         Class attribute. List of page url skeletons.
-    sess : requests.Session() object
-        requests Session to use for all queries
+    clients : list
+        list of Works and Users using this handler
+    sess : Session
+        requests Session used
 
     """
-    '''connects to User class; handles I/O'''
 
     page_urls = {'bookmarks': 'https://archiveofourown.org/users/%s/bookmarks?page=%%d',
-                      'history': 'https://archiveofourown.org/users/%s/readings?page=%%d'}
+                'history': 'https://archiveofourown.org/users/%s/readings?page=%%d',
+                'tag': 'https://archiveofourown.org/tags/{}/works?page='}
 
-    def __init__(self, user, sess=None):
-        """AO3UserHandler(User user, [Session sess]) --> AO3UserHandler
+
+    def __init__(self, init_client, sess=None):
+        """AO3Handler(Session sess, AO3 init_client) --> AO3PublicHandler
 
         Parameters
         ----------
-        user : User() object
-            User of handler.
-        sess : requests.Session() object
-            requests Session to use.
-
-        Returns
-        -------
-        AO3UserHandler
-            Handler for User I/O needs.
-
+        sess : Session
+            Session to use.
+        init_client : AO3 object
+            Parent AO3 instance.
         """
 
         if sess == None:
             self.sess = requests.Session()
         else:
             self.sess = sess
-        self.user = user
 
-    def authenticate(self, username, password):
-        """AO3UserHandler.authenticate(str username, str password) --> str
+        self.init_client = init_client
+
+    def login(self, username, password):
+        """AO3Handler.authenticate(str username, str password) --> str
 
         Parameters
         ----------
@@ -87,8 +83,8 @@ class AO3UserHandler():
         else:
             return "Authentication successful. You are logged in."
 
-    def get_pages(self, username, type):
-        """AO3UserHandler.get_pages(str username, str type) --> list
+    def get_pages(self, username, type, tag=''):
+        """AO3Handler.get_pages(str username, str type) --> list
         Returns list of BeautifulSoups of specified type of user pages. User must be logged in to see private bookmarks.
 
         Parameters
@@ -96,7 +92,9 @@ class AO3UserHandler():
         username : str
             User username.
         type : str
-            Type of page to get. Current types: 'bookmarks', 'history' (see class attribute page_urls)
+            Type of page to get. Current types:
+                'bookmarks'
+                'history' (see class attribute page_urls)
 
         Returns
         -------
@@ -104,16 +102,18 @@ class AO3UserHandler():
             Description of returned object.
 
         """
-
-        api_url = (
-            self.page_urls[type]
-            % username)
+        if type == 'tag':
+            api_url = self.page_urls[type].format(tag)
+        else:
+            api_url = (
+                self.page_urls[type]
+                % username)
 
         soups = [] # list of html soups saved
         num_soups = 0
 
         for page_no in itertools.count(start=1):
-            print("Finding page: \t" + str(page_no) + " of bookmarks.")
+            print("Finding page: \t" + str(page_no) + " of {}.".format(type))
 
             req = self.sess.get(api_url % page_no)
             soup = BeautifulSoup(req.text, features='html.parser')
@@ -127,14 +127,45 @@ class AO3UserHandler():
             # pointing to the next page.  Otherwise, it contains a <span>
             # tag with the 'disabled' class.
             try:
-                print("found next button")
                 next_button = soup.find('li', attrs={'class': 'next'})
                 if next_button.find('span', attrs={'class': 'disabled'}):
-                    print("next button was disabled")
                     break
             except:
                 # In case of absence of "next"
-                print("no next button")
                 break
 
         return soups
+
+    def get_work_soup(self, work_id):
+        """Get the BeautifulSoup of a given work.
+
+        Parameters
+        ----------
+        work_id : str or int
+            AO3 ID of work.
+
+        Returns
+        -------
+        BeautifulSoup object
+            Soup of work.
+
+        """
+        req = self.sess.get('https://archiveofourown.org/works/%s' % work_id)
+
+        if req.status_code == 404:
+            raise WorkNotFound('Unable to find a work with id %r' % work_id)
+        elif req.status_code != 200:
+            raise RuntimeError('Unexpected error from AO3 API: %r (%r)' % (
+                req.text, req.status_code))
+
+        # For some works, AO3 throws up an interstitial page asking you to
+        # confirm that you really want to see the adult works.  Yes, we do.
+        if 'This work could have adult content' in req.text:
+            req = self.sess.get(
+                'https://archiveofourown.org/works/%s?view_adult=true' %
+                work_id)
+
+        if 'This work is only available to registered users' in req.text:
+            raise RestrictedWork('Looking at work ID {} requires login'.format(work_id))
+
+        return req.text

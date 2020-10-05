@@ -1,7 +1,8 @@
 import re
 import collections
 
-from user_io import AO3UserHandler
+from handlers import AO3Handler
+from works import iterate_pages, Work
 
 
 ReadingHistoryItem = collections.namedtuple(
@@ -31,17 +32,12 @@ class User(object):
 
     """
 
-    def __init__(self, username, public_handler, sess=None):
+    def __init__(self, username, handler):
         self.username = username
-        self.io_handler = AO3UserHandler(self, sess)
-        self.public_handler = public_handler
+        self.io_handler = handler
 
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
-
-    def authenticate_handler(self, password):
-        print("Authenticating...")
-        print(self.io_handler.authenticate(self.username, password))
 
     def bookmarks_ids(self):
         """User.bookmark_ids() --> list
@@ -60,50 +56,45 @@ class User(object):
         num_works = 0
 
         page_soups = self.io_handler.get_pages(self.username, 'bookmarks')
-        for page in page_soups:
-            # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
-
-            # The entries are stored in a list of the form:
-            #
-            #     <ol class="bookmark index group">
-            #       <li id="bookmark_12345" class="bookmark blurb group" role="article">
-            #         ...
-            #       </li>
-            #       <li id="bookmark_67890" class="bookmark blurb group" role="article">
-            #         ...
-            #       </li>
-            #       ...
-            #     </o
-
-            ol_tag = page.find('ol', attrs={'class': 'bookmark'})
-
-
-            for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
-                num_works = num_works + 1
-                try:
-                    # <h4 class="heading">
-                    #     <a href="/works/12345678">Work Title</a>
-                    #     <a href="/users/authorname/pseuds/authorpseud" rel="author">Author Name</a>
-                    # </h4>
-
-                    for h4_tag in li_tag.findAll('h4', attrs={'class': 'heading'}):
-                        for link in h4_tag.findAll('a'):
-                            if ('works' in link.get('href')) and not ('external_works' in link.get('href')):
-                                work_id = link.get('href').replace('/works/', '')
-                                bookmarks.append(work_id)
-                except KeyError:
-                    # A deleted work shows up as
-                    #
-                    #      <li class="deleted reading work blurb group">
-                    #
-                    # There's nothing that we can do about that, so just skip
-                    # over it.
-                    if 'deleted' in li_tag.attrs['class']:
-                        pass
-                    else:
-                        raise
+        bookmarks = iterate_pages(page_soups, 'bookmark')
 
         return bookmarks
+
+    def bookmarks(self, load=False, page_soups=None):
+        """User.bookmark_ids() --> list
+
+        Returns a list of the user's bookmarks' ids. Ignores external work bookmarks.
+
+        User must be logged in to see private bookmarks.
+
+        Returns
+        -------
+        list
+            List of work ids bookmarked by the user.
+        """
+
+        bookmarks = []
+        num_works = 0
+
+        # page_soups = self.io_handler.get_pages(self.username, 'bookmarks')
+        bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=True)
+
+        if load: # load works from given HTML - no I/O required
+            bookmarks = []
+
+            for n in range(len(bookmarks_data[0])):
+                bookmark_id = bookmarks_data[0][n]
+                bookmark_soup = bookmarks_data[1][n]
+                # print('n = {0} \t loading bookmark with id {1}'.format(n, bookmark_id))
+                work = Work(bookmark_id, io_handler=self.io_handler, load=False, soup=bookmark_soup)
+                bookmarks.append(work)
+
+                num_works += 1
+                # print (str(bookmark_total) + "\t bookmarks found.")
+            return bookmarks
+
+        else: # just return IDs
+            return bookmarks_data[0]
 
     def load_bookmarks(self):
         """User.load_bookmarks() --> list
@@ -126,7 +117,7 @@ class User(object):
         bookmarks = []
 
         for bookmark_id in bookmark_ids:
-            work = Work(bookmark_id, io_handler=self.public_handler)
+            work = Work(bookmark_id, io_handler=self.io_handler)
             bookmarks.append(work)
 
             bookmark_total = bookmark_total + 1
