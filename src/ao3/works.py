@@ -13,7 +13,7 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
                             'work'
     """
     if save_HTML:
-        works = []
+        works = {}
     ids = []
     num_works = 0
 
@@ -49,7 +49,7 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
                             work_id = link.get('href').replace('/works/', '')
                             ids.append(work_id)
                 if save_HTML:
-                    works.append(li_tag)
+                    works[work_id] = li_tag
 
             except KeyError:
                 # A deleted work shows up as
@@ -64,7 +64,7 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
                     raise
 
     if save_HTML:
-        return (ids, works)
+        return works
     else:
         return ids
 
@@ -106,7 +106,6 @@ class Work(object):
 
         if load == True:
             self.load_data()
-            self._source = 'work'
         elif soup != None:
             self._soup = soup
             self._html = str(self._soup)
@@ -133,6 +132,7 @@ class Work(object):
         try:
             self._html = self._io_handler.get_work_soup(self.id)
             self._soup = BeautifulSoup(self._html, 'html.parser')
+            self._source = 'work'
             return 'Work loaded'
         except Exception as e: # if exception occurs, data was not loaded properly
             print('Work could not be loaded.')
@@ -155,8 +155,8 @@ class Work(object):
             title_tag = self._soup.find('h2', attrs={'class': 'title'})
             return title_tag.contents[0].strip()
         elif self._source == 'search':
-            title_tag = self._soup.find('h4', attrs={'class': 'heading'})
-            return title_tag.a.get_text().strip()
+            heading_tag = self._soup.find('h4', attrs={'class': 'heading'})
+            return heading_tag.find_all('a')[0].get_text().strip()
 
     @property
     def author(self):
@@ -175,8 +175,8 @@ class Work(object):
             assert len(a_tag) == 1
             return a_tag[0].contents[0].strip()
         elif self._source == 'search':
-            author_link = self._soup.find('a', attrs={'rel': 'author'})
-            return author_link.get_text().strip()
+            heading_tag = self._soup.find('h4', attrs={'class': 'heading'})
+            return heading_tag.find_all('a')[1].get_text().strip()
 
     @property
     def summary(self):
@@ -197,7 +197,7 @@ class Work(object):
             blockquote = self._soup.find('blockquote', attrs={'class': 'summary'})
         return blockquote.renderContents().decode('utf8').strip()
 
-    def _lookup_stat(self, class_name, default=None):
+    def _lookup_stat(self, class_name, default=None, linked=False):
         """Returns the value of a stat."""
         # The stats are stored in a series of divs of the form
         #
@@ -210,7 +210,12 @@ class Work(object):
             return default
         if 'tags' in dd_tag.attrs['class']:
             return self._lookup_list_stat(dd_tag=dd_tag)
-        return dd_tag.contents[0]
+        if linked:
+            # return dd_tag.a.contents[0].strip("\n").strip()
+            return dd_tag.a.contents[0].strip()
+        else:
+            # return dd_tag.contents[0].strip("\n").strip()
+            return dd_tag.contents[0].strip()
 
     def _lookup_list_stat(self, dd_tag):
         """Returns the value of a list statistic.
@@ -234,15 +239,25 @@ class Work(object):
         a_tags = [t.contents[0] for t in li_tags]
         return [t.contents[0] for t in a_tags]
 
+    def _lookup_stat_icon(self, icon_class):
+        icon_span = self._soup.find('span', attrs={'class': icon_class})
+        return [t.strip() for t in icon_span['title'].split(',')]
+
     @property
     def rating(self):
         """The age rating for this work."""
-        return self._lookup_stat('rating', [])
+        if self._source == 'work':
+            return self._lookup_stat('rating', [])
+        elif self._source == 'search':
+            return self._lookup_stat_icon('rating')
 
     @property
     def warnings(self):
         """Any archive warnings on the work."""
-        value = self._lookup_stat('warning', [])
+        if self._source == 'work':
+            value = self._lookup_stat('warning', [])
+        elif self._source == 'search':
+            value = self._lookup_stat_icon('warnings')
         if value == ['No Archive Warnings Apply']:
             return []
         else:
@@ -251,7 +266,10 @@ class Work(object):
     @property
     def category(self):
         """The category of the work."""
-        return self._lookup_stat('category', [])
+        if self._source == 'work':
+            return self._lookup_stat('category', [])
+        elif self._source == 'search':
+            return self._lookup_stat_icon('category')
 
     @property
     def fandoms(self):
@@ -287,40 +305,67 @@ class Work(object):
         """The date when this work was published."""
         if self._source == 'work':
             date_str = self._lookup_stat('published')
+            date_val = datetime.strptime(date_str, '%Y-%m-%d')
         elif self._source == 'search':
             date_str = self._soup.find('p', attrs={'class': 'datetime'}).get_text().strip()
-        date_val = datetime.strptime(date_str, '%Y-%m-%d')
+            date_val = datetime.strptime(date_str, '%d %b %Y')
         return date_val.date()
 
     @property
     def words(self):
         """The number of words in this work."""
-        return int(self._lookup_stat('words', 0))
+        return int(self._lookup_stat('words', 0).replace(',',''))
 
     @property
     def posted_chapters(self):
         """The number of chapters posted."""
-        pass
+        text = self._lookup_stat('chapters', default='1/1')
+        # print()
+        # print(text)
+        if text == '':
+            # print('Text was empty, trying link')
+            text = self._lookup_stat('chapters', default='1/1', linked=True)
+            return int(text)
+
+        # print('Chapter full text: {}'.format(text))
+        return int(text.split('/')[0])
 
     @property
     def total_chapters(self):
-        """The number of total chapters, or ? if unknown."""
-        pass
+        chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
+        # print(chapters_tag_contents)
+        try:
+            if chapters_tag_contents[0] == '\n':
+                total_chapters = chapters_tag_contents[2].strip()[1:]
+                return str(total_chapters)
+            else:
+                total_chapters = chapters_tag_contents[0].strip()[2:]
+                return str(total_chapters)
+        except Exception as e:
+            print('Could not print contents of {0} at index {1}'.format(chapters_tag_contents, index))
+            return e
 
     @property
     def comments(self):
         """The number of comments on this work."""
-        return int(self._lookup_stat('comments', 0))
+        if self._source == "work":
+            return int(self._lookup_stat('comments', default='0').replace(',',''))
+        elif self._source == "search":
+            return int(self._lookup_stat('comments', default='0', linked=True).replace(',',''))
+
 
     @property
     def kudos(self):
         """The number of kudos on this work."""
-        return int(self._lookup_stat('kudos', 0))
+        if self._source == "work":
+            return int(self._lookup_stat('kudos', default='0').replace(',',''))
+        elif self._source == "search":
+            return int(self._lookup_stat('kudos', default='0', linked=True).replace(',',''))
 
     @property
     def complete(self):
         """Returns True if posted chapters = total chapters, False if not"""
-        return (self.posted_chapters == self.total_chapters)
+        return (str(self.posted_chapters) == str(self.total_chapters))
 
     @property
     def kudos_left_by(self):
@@ -341,6 +386,9 @@ class Work(object):
         # most kudos is http://archiveofourown.org/works/2080878, and this
         # approach successfully retrieved the username of everybody who
         # left kudos.
+        if self._source == 'search':
+            self.load_data()
+
         kudos_div = self._soup.find('div', attrs={'id': 'kudos'})
         for a_tag in kudos_div.findAll('a'):
 
@@ -370,7 +418,7 @@ class Work(object):
         #
         # It might be nice to follow that page and get a list of who has
         # bookmarked this, but for now just return the number.
-        return int(self._lookup_stat('bookmarks').contents[0])
+        return int(self._lookup_stat('bookmarks', 0, True))
 
     @property
     def hits(self):

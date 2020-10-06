@@ -1,6 +1,7 @@
 # -*- encoding: utf-8
 
 import requests
+import getpass
 
 from utils import *
 from users import User
@@ -40,12 +41,13 @@ class AO3(object):
         else:
             return (ids, soups)
 
-    def login(self, username, password):
+    def login(self, username):
         """Log in to the archive.
 
         This allows you to access pages that are only available while
         logged in.  This doesn't do any checking that the password is correct.
 
         """
+        password = getpass.getpass('Password: ')
         self.user = User(username=username, handler=self.handler)
-        self.handler.login(username, password)
+        print(self.handler.login(username, password))

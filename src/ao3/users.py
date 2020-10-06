@@ -76,17 +76,13 @@ class User(object):
         bookmarks = []
         num_works = 0
 
-        # page_soups = self.io_handler.get_pages(self.username, 'bookmarks')
-        bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=True)
-
         if load: # load works from given HTML - no I/O required
+            bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=True)
             bookmarks = []
 
-            for n in range(len(bookmarks_data[0])):
-                bookmark_id = bookmarks_data[0][n]
-                bookmark_soup = bookmarks_data[1][n]
+            for id, html in bookmarks_data.items():
                 # print('n = {0} \t loading bookmark with id {1}'.format(n, bookmark_id))
-                work = Work(bookmark_id, io_handler=self.io_handler, load=False, soup=bookmark_soup)
+                work = Work(id, io_handler=self.io_handler, load=False, soup=html)
                 bookmarks.append(work)
 
                 num_works += 1
@@ -94,7 +90,8 @@ class User(object):
             return bookmarks
 
         else: # just return IDs
-            return bookmarks_data[0]
+            bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=False)
+            return bookmarks_data
 
     def load_bookmarks(self):
         """User.load_bookmarks() --> list
