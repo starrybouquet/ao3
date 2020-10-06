@@ -317,7 +317,7 @@ class Work(object):
         return int(self._lookup_stat('words', 0).replace(',',''))
 
     @property
-    def posted_chapters(self):
+    def chapters_posted(self):
         """The number of chapters posted."""
         text = self._lookup_stat('chapters', default='1/1')
         # print()
@@ -331,7 +331,7 @@ class Work(object):
         return int(text.split('/')[0])
 
     @property
-    def total_chapters(self):
+    def chapters_total(self):
         chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
         # print(chapters_tag_contents)
         try:
@@ -448,7 +448,8 @@ class Work(object):
             'stats': {
                 'published': str(self.published),
                 'words': self.words,
-                # TODO: chapters
+                'chapters posted': self.chapters_posted,
+                'chapters total': self.chapters_total,
                 'comments': self.comments,
                 'kudos': self.kudos,
                 'bookmarks': self.bookmarks,

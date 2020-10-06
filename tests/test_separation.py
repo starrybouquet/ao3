@@ -1,9 +1,16 @@
-from __init__ import AO3
+import os
+import sys
 import random
+
 from bs4 import BeautifulSoup
 
+import ao3
+from .ao3 import users
+
+sys.path.insert(0, os.path.abspath('..'))
+
 def main():
-    api = AO3()
+    api = ao3.AO3()
 
     api.login('starrybouquet')
     # # get HTML
