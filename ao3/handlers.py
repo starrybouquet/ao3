@@ -27,7 +27,7 @@ class AO3Handler():
 
     page_urls = {'bookmarks': "https://archiveofourown.org/users/{0}/bookmarks?page={1}",
                 'history': 'https://archiveofourown.org/users/{0}/readings?page={1}',
-                'tags': 'https://archiveofourown.org/tags/{0}/works?page='}
+                'tags': 'https://archiveofourown.org/tags/{0}/works?page={1}'}
 
 
     def __init__(self, init_client, sess=None):
@@ -84,7 +84,7 @@ class AO3Handler():
         else:
             return "Authentication successful. You are logged in."
 
-    def get_pages(self, username, type, tag=''):
+    def get_pages(self, username, type, tag='', save=False, filename_template="html_save/{0}_html_{1}.txt", pageStart=None, pageEnd=None):
         """AO3Handler.get_pages(str username, str type) --> list
         Returns list of BeautifulSoups of specified type of user pages. User must be logged in to see private bookmarks.
 
@@ -103,23 +103,37 @@ class AO3Handler():
             Description of returned object.
 
         """
-        if type == 'tag':
-            api_url = self.page_urls[type].format(tag)
-        else:
-            api_url = self.page_urls[type].format(tag)
+        api_url = self.page_urls[type]
 
-        soups = [] # list of html soups saved
+        # soups = [] # list of html soups saved
         num_soups = 0
 
-        for page_no in itertools.count(start=1):
+        if pageStart and pageEnd:
+            iterator = itertools.count(start=pageStart, end=pageEnd)
+        elif pageStart:
+            iterator = itertools.count(start=pageStart)
+        else:
+            iterator = itertools.count(start=1)
+
+        for page_no in iterator:
             print("Finding page: \t" + str(page_no) + " of {}.".format(type))
-            if page_no >= 100:
-                print('Pausing 5 min before reading the 100th page.')
+            if page_no % 100 == 0:
+                print('Have read 100 pages since last sleep; pausing 5 min')
                 time.sleep(300)
                 print('Continuing.')
 
-            req = self.sess.get(api_url.format(page_no))
+            if type == 'tags':
+                url = api_url.format(tag, page_no)
+            else:
+                url = api_url.format(usernam, page_no)
+
+            req = self.sess.get(url)
             soup = BeautifulSoup(req.text, features='html.parser')
+            if save:
+                filename = filename_template.format(type, page_no)
+                with open(filename, "w") as f:
+                    plain_html = str(soup)
+                    f.write(plain_html)
             soups.append(soup) # append to all soups saved
 
             # The pagination button at the end of the page is of the form
@@ -130,11 +144,14 @@ class AO3Handler():
             # pointing to the next page.  Otherwise, it contains a <span>
             # tag with the 'disabled' class.
             try:
+                print('looking for next button')
                 next_button = soup.find('li', attrs={'class': 'next'})
                 if next_button.find('span', attrs={'class': 'disabled'}):
+                    print('disabled; breaking')
                     break
             except:
                 # In case of absence of "next"
+                print('no next button')
                 break
 
         return soups

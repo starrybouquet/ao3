@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import urllib.parse
 
 from bs4 import BeautifulSoup
 
@@ -14,8 +15,13 @@ from ao3.handlers import AO3Handler
 def main():
     api = ao3.AO3()
 
+    tag_name = "Samantha \"Sam\" Carter/Jack O'Neill"
+
+    converted_tag = urllib.parse.quote(tag_name).replace('/', '*s*')
+    pages = api.handler.get_pages('', 'tags', tag=converted_tag)
+
     # api.login('starrybouquet')
-    save_html(api, 'tag')
+    # save_html(api, 'tag')
 
     # # load HTML as soups
     # soups = []
@@ -49,11 +55,11 @@ def save_html(api, pagetype):
     elif pagetype == 'tag':
         soups = api.tag("Samantha \"Sam\" Carter/Jack O'Neill")
     # save HTML
-    for n in range(len(soups)):
-        with open("html_save/{0}_html_{1}.txt".format(pagetype, n), "w") as f:
-            plain_html = str(soups[n])
-            f.write(plain_html)
-    input("HTML saved. Press 'enter' to continue.")
+    # for n in range(len(soups)):
+    #     with open("html_save/{0}_html_{1}.txt".format(pagetype, n), "w") as f:
+    #         plain_html = str(soups[n])
+    #         f.write(plain_html)
+    # input("HTML saved. Press 'enter' to continue.")
     return True
 
 def print_stats(work):

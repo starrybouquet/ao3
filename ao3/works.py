@@ -18,7 +18,7 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
     num_works = 0
 
     for page in page_soups:
-        # print("Finding page: \t" + str(page_no) + " of bookmarks. \t" + str(num_works) + " bookmarks ids found.")
+        print("Inspecting page: \t" + str(page_no) + " of list. \t" + str(num_works) + " work ids found.")
 
         # The entries are stored in a list of the form:
         #
@@ -31,9 +31,11 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
         #       </li>
         #       ...
         #     </o
-
-        ol_tag = page.find('ol', attrs={'class': class_name})
-        print(ol_tag)
+        try:
+            ol_tag = page.find('ol', attrs={'class': class_name})
+        except Exception as e:
+            print(ol_tag)
+            return e
 
 
         for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
@@ -458,3 +460,17 @@ class Work(object):
             }
         }
         return json.dumps(data, *args, **kwargs)
+
+    def csv(self):
+        """Provides a complete representation of the work as a csv row format.
+        Intended to be combined with other works
+        for example, a tag could be represented in a csv table.
+        columns would be the titles shown in the json() function.
+        """
+        data = [self.id, self.title, self.author, self.summary,
+                self.rating, self.warnings, self.category,
+                self.fandoms, self.relationship, self.characters, self.additional_tags,
+                self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
+                self.comments, self.kudos, self.bookmarks, self.hits]
+
+        return ', '.join(['"{0}"'.format(str(item)) for item in data])
