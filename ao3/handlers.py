@@ -1,5 +1,6 @@
 import requests
 import itertools
+import time
 
 from bs4 import BeautifulSoup
 
@@ -24,9 +25,9 @@ class AO3Handler():
 
     """
 
-    page_urls = {'bookmarks': 'https://archiveofourown.org/users/%s/bookmarks?page=%%d',
-                'history': 'https://archiveofourown.org/users/%s/readings?page=%%d',
-                'tag': 'https://archiveofourown.org/tags/{}/works?page='}
+    page_urls = {'bookmarks': "https://archiveofourown.org/users/{0}/bookmarks?page={1}",
+                'history': 'https://archiveofourown.org/users/{0}/readings?page={1}',
+                'tags': 'https://archiveofourown.org/tags/{0}/works?page='}
 
 
     def __init__(self, init_client, sess=None):
@@ -105,17 +106,19 @@ class AO3Handler():
         if type == 'tag':
             api_url = self.page_urls[type].format(tag)
         else:
-            api_url = (
-                self.page_urls[type]
-                % username)
+            api_url = self.page_urls[type].format(tag)
 
         soups = [] # list of html soups saved
         num_soups = 0
 
         for page_no in itertools.count(start=1):
             print("Finding page: \t" + str(page_no) + " of {}.".format(type))
+            if page_no >= 100:
+                print('Pausing 5 min before reading the 100th page.')
+                time.sleep(300)
+                print('Continuing.')
 
-            req = self.sess.get(api_url % page_no)
+            req = self.sess.get(api_url.format(page_no))
             soup = BeautifulSoup(req.text, features='html.parser')
             soups.append(soup) # append to all soups saved
 

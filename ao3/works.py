@@ -5,7 +5,7 @@ import json
 
 from bs4 import BeautifulSoup, Tag
 
-from handlers import AO3Handler
+from .handlers import AO3Handler
 
 def iterate_pages(page_soups, class_name, save_HTML=False):
     """Iterate over pages of lists of works.
@@ -33,6 +33,7 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
         #     </o
 
         ol_tag = page.find('ol', attrs={'class': class_name})
+        print(ol_tag)
 
 
         for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):

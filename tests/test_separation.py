@@ -4,42 +4,37 @@ import random
 
 from bs4 import BeautifulSoup
 
-import ao3
-from .ao3 import users
 
 sys.path.insert(0, os.path.abspath('..'))
+
+import ao3
+from ao3.users import User
+from ao3.handlers import AO3Handler
 
 def main():
     api = ao3.AO3()
 
-    api.login('starrybouquet')
-    # # get HTML
-    # soups = api.handler.get_pages(api.user.username, 'bookmarks')
-    # # save HTML
-    # for n in range(len(soups)):
-    #     with open("bookmark_html_{}.txt".format(n), "w") as f:
-    #         plain_html = soups[n].prettify()
-    #         f.write(plain_html)
-    # input("HTML saved. Press 'enter' to continue.")
+    # api.login('starrybouquet')
+    save_html(api, 'tag')
 
-    # load HTML as soups
-    soups = []
-    for n in range(14):
-        with open("html_save/bookmark_html_{}.txt".format(n), 'r') as f:
-            html = f.read()
-            soups.append(BeautifulSoup(html, 'html.parser'))
-    print("Loaded soups. Getting bookmarks.")
-
-
-    # test bookmarks - currently page_soups is passed in for debugging
-    bookmarks = api.user.bookmarks(load=True, page_soups=soups)
-    print("loaded bookmarks")
-
-    for i in [random.randint(0, len(bookmarks)) for n in range(10)]:
-        work = bookmarks[i]
-        print_stats(bookmarks[i])
-
-    print()
+    # # load HTML as soups
+    # soups = []
+    # for n in range(14):
+    #     with open("html_save/bookmark_html_{}.txt".format(n), 'r') as f:
+    #         html = f.read()
+    #         soups.append(BeautifulSoup(html, 'html.parser'))
+    # print("Loaded soups. Getting bookmarks.")
+    #
+    #
+    # # test bookmarks - currently page_soups is passed in for debugging
+    # bookmarks = api.user.bookmarks(load=True, page_soups=soups)
+    # print("loaded bookmarks")
+    #
+    # for i in [random.randint(0, len(bookmarks)) for n in range(10)]:
+    #     work = bookmarks[i]
+    #     print_stats(bookmarks[i])
+    #
+    # print()
 
     # test restricted work
     # restricted = api.work(24749773)
@@ -47,6 +42,19 @@ def main():
     # print('Restricted: ')
     # print_stats(restricted)
 
+def save_html(api, pagetype):
+    # get HTML
+    if pagetype == 'bookmarks':
+        soups = api.handler.get_pages('', pagetype)
+    elif pagetype == 'tag':
+        soups = api.tag("Samantha \"Sam\" Carter/Jack O'Neill")
+    # save HTML
+    for n in range(len(soups)):
+        with open("html_save/{0}_html_{1}.txt".format(pagetype, n), "w") as f:
+            plain_html = str(soups[n])
+            f.write(plain_html)
+    input("HTML saved. Press 'enter' to continue.")
+    return True
 
 def print_stats(work):
     print('URL: ' + str(work.url))

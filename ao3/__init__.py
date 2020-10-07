@@ -2,11 +2,12 @@
 
 import requests
 import getpass
+import urllib.parse
 
-from utils import *
-from users import User
-from works import Work, iterate_pages
-from handlers import AO3Handler
+from .utils import *
+from .users import User
+from .works import Work, iterate_pages
+from .handlers import AO3Handler
 
 class AO3(object):
     """A scraper for the Archive of Our Own (AO3)."""
@@ -32,14 +33,15 @@ class AO3(object):
         where ids is a list of all work IDs and soups is a list of all soups for that work
         If load=True, loads all works so that a list of works are returned in the tuple
             instead of a list of soups"""
-        converted_tag = tag_name # TODO: CHANGE TO FIX PERCENT ENCODING ISSUES
-        pages = self.handler.get_pages(converted_tag, 'tags')
-        (ids, soups) = iterate_pages(pages)
+        converted_tag = urllib.parse.quote(tag_name).replace('/', '*s*')
+        input()
+        pages = self.handler.get_pages('', 'tags', tag=converted_tag)
+        soups = iterate_pages(pages, 'work', saveHTML=True)
         if load == True:
             works = [Work(id=id, io_handler=self.handler, load=False, soup=soup) for soup in soups]
-            return (ids, works)
+            return (soups, works)
         else:
-            return (ids, soups)
+            return soups
 
     def login(self, username):
         """Log in to the archive.

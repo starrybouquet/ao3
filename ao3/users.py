@@ -1,8 +1,8 @@
 import re
 import collections
 
-from handlers import AO3Handler
-from works import iterate_pages, Work
+from .handlers import AO3Handler
+from .works import iterate_pages, Work
 
 
 ReadingHistoryItem = collections.namedtuple(
