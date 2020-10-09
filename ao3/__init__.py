@@ -45,7 +45,7 @@ class AO3(object):
             return soups
 
     def to_csv(self, works, filename):
-        """Convert dict works {id: Work object} to a csv file."""
+        """Convert list of Work objects to a csv file."""
 
         with open(filename, 'w') as f:
             columns = ['id', 'title', 'author', 'summary',
@@ -54,8 +54,8 @@ class AO3(object):
             'comments', 'kudos', 'bookmarks', 'hits']
             f.write(', '.join([c for c in columns]))
             f.write('\n')
-            for id, work in works.items():
-                print('Writing work with id {}'.format(id))
+            for work in works:
+                print('Writing work with id {}'.format(work.id))
                 csv_line = work.csv() + '\n'
                 f.write(csv_line)
 

@@ -16,8 +16,10 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
         works = {}
     ids = []
     num_works = 0
+    page_no = 0
 
     for page in page_soups:
+        page_no += 1
         print("Inspecting page: \t" + str(page_no) + " of list. \t" + str(num_works) + " work ids found.")
 
         # The entries are stored in a list of the form:
@@ -179,7 +181,11 @@ class Work(object):
             return a_tag[0].contents[0].strip()
         elif self._source == 'search':
             heading_tag = self._soup.find('h4', attrs={'class': 'heading'})
-            return heading_tag.find_all('a')[1].get_text().strip()
+            a_tag = [t
+                     for t in byline_tag.contents
+                     if isinstance(t, Tag)]
+            assert len(a_tag) == 1
+            return a_tag[0].contents[0].strip()
 
     @property
     def summary(self):
@@ -198,7 +204,10 @@ class Work(object):
             blockquote = summary_div.find('blockquote')
         elif self._source == 'search':
             blockquote = self._soup.find('blockquote', attrs={'class': 'summary'})
-        return blockquote.renderContents().decode('utf8').strip()
+        if blockquote != None:
+            return blockquote.renderContents().decode('utf8').strip()
+        else: # blockquote will throw an error if author put no summary so just return none instead
+            return ''
 
     def _lookup_stat(self, class_name, default=None, linked=False):
         """Returns the value of a stat."""
@@ -322,31 +331,71 @@ class Work(object):
     @property
     def chapters_posted(self):
         """The number of chapters posted."""
-        text = self._lookup_stat('chapters', default='1/1')
-        # print()
-        # print(text)
-        if text == '':
-            # print('Text was empty, trying link')
-            text = self._lookup_stat('chapters', default='1/1', linked=True)
-            return int(text)
+        # try:
+        #     text = self._lookup_stat('chapters', default='1/1')
+        #     # print()
+        #     # print(text)
+        #     if text == '':
+        #         # print('Text was empty, trying link')
+        #         text = self._lookup_stat('chapters', default='1/1', linked=True)
+        #         return int(text)
+        #
+        #     # print('Chapter full text: {}'.format(text))
+        #     return int(text.split('/')[0])
+        # except Exception as e:
+        #     print('Error: {}'.format(e))
+        #     print('Chapter tag contents looks like: {}'.format(text))
+        #     x = str(input('Chapters posted cannot be found. Hit s to skip, q to break'))
+        #     if x == 'q':
+        #         raise e
+        #     elif x == 's':
+        #         return '1'
 
-        # print('Chapter full text: {}'.format(text))
-        return int(text.split('/')[0])
+        try:
+            chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
+            if chapters_tag_contents[0] == '\n':
+                print('in if')
+                chapters = chapters_tag_contents[2].partition('/')[0]
+                return str(chapters)
+            elif '1/' in chapters_tag_contents[0]:
+                print('in elif')
+                return '1'
+            else:
+                print('in else')
+                chapters = chapters_tag_contents[0].get_text()
+                return str(chapters)
+        except Exception as e:
+            print('Error: {}'.format(e))
+            print('Chapter tag contents looks like: {}'.format(chapters_tag_contents))
+            x = str(input('Chapters posted cannot be found. Hit s to return default value ?, q to break'))
+            if x == 'q':
+                raise e
+            elif x == 's':
+                return '?'
 
     @property
     def chapters_total(self):
-        chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
-        # print(chapters_tag_contents)
         try:
+            chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
             if chapters_tag_contents[0] == '\n':
-                total_chapters = chapters_tag_contents[2].strip()[1:]
+                print('in if')
+                total_chapters = chapters_tag_contents[2].partition('/')[2]
                 return str(total_chapters)
+            elif '1/' in chapters_tag_contents[0]:
+                print('in elif')
+                return '1'
             else:
-                total_chapters = chapters_tag_contents[0].strip()[2:]
+                print('in else')
+                total_chapters = chapters_tag_contents[1].partition('/')[1]
                 return str(total_chapters)
         except Exception as e:
-            print('Could not print contents of {0} at index {1}'.format(chapters_tag_contents, index))
-            return e
+            print('Error: {}'.format(e))
+            print('Chapter tag contents looks like: {}'.format(chapters_tag_contents))
+            x = str(input('Chapters total cannot be found. Hit s to skip, q to break'))
+            if x == 'q':
+                raise e
+            elif x == 's':
+                return '?'
 
     @property
     def comments(self):
@@ -467,10 +516,14 @@ class Work(object):
         for example, a tag could be represented in a csv table.
         columns would be the titles shown in the json() function.
         """
-        data = [self.id, self.title, self.author, self.summary,
-                self.rating, self.warnings, self.category,
-                self.fandoms, self.relationship, self.characters, self.additional_tags,
-                self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
-                self.comments, self.kudos, self.bookmarks, self.hits]
+        try:
+            data = [self.id, self.title, self.author, self.summary,
+                    self.rating, self.warnings, self.category,
+                    self.fandoms, self.relationship, self.characters, self.additional_tags,
+                    self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
+                    self.comments, self.kudos, self.bookmarks, self.hits]
+        except Exception as e:
+            print('Exception while getting data of work with id {}.'.format(self.id))
+            input('do you want to do soumething about it')
 
         return ', '.join(['"{0}"'.format(str(item)) for item in data])
