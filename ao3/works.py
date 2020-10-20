@@ -530,19 +530,19 @@ class Work(object):
         }
         return json.dumps(data, *args, **kwargs)
 
-    def csv(self):
-        """Provides a complete representation of the work as a csv row format.
-        Intended to be combined with other works
-        for example, a tag could be represented in a csv table.
-        columns would be the titles shown in the json() function.
-        """
-        try:
-            data = [self.id, self.title, self.author, self.summary,
-                    self.rating, self.warnings, self.category,
-                    self.fandoms, self.relationship, self.characters, self.additional_tags,
-                    self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
-                    self.comments, self.kudos, self.bookmarks, self.hits]
-            return ', '.join(['"{0}"'.format(str(item)) for item in data])
-        except Exception as e:
-            print('Exception while getting data of work with id {}.'.format(self.id))
-            raise e
+    # def csv(self):
+    #     """Provides a complete representation of the work as a csv row format.
+    #     Intended to be combined with other works
+    #     for example, a tag could be represented in a csv table.
+    #     columns would be the titles shown in the json() function.
+    #     """
+    #     try:
+    #         data = [self.id, self.title, self.author, self.summary,
+    #                 self.rating, self.warnings, self.category,
+    #                 self.fandoms, self.relationship, self.characters, self.additional_tags,
+    #                 self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
+    #                 self.comments, self.kudos, self.bookmarks, self.hits]
+    #         return ', '.join(['"{0}"'.format(str(item)) for item in data])
+    #     except Exception as e:
+    #         print('Exception while getting data of work with id {}.'.format(self.id))
+    #         raise e

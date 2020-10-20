@@ -84,7 +84,7 @@ class AO3Handler():
         else:
             return "Authentication successful. You are logged in."
 
-    def get_pages(self, username, type, tag='', save=False, filename_template="html_save/{0}_html_{1}.txt", pageStart=None, pageEnd=None):
+    def get_pages(self, username, type, tag='', save_while_loading=False, filename_template="html/{0}_html_{1}.txt", pageRange=(None,None)):
         """AO3Handler.get_pages(str username, str type) --> list
         Returns list of BeautifulSoups of specified type of user pages. User must be logged in to see private bookmarks.
 
@@ -108,10 +108,10 @@ class AO3Handler():
         # soups = [] # list of html soups saved
         num_soups = 0
 
-        if pageStart and pageEnd:
-            iterator = itertools.count(start=pageStart, end=pageEnd)
-        elif pageStart:
-            iterator = itertools.count(start=pageStart)
+        if pageRange[0] and pageRange[1]:
+            iterator = itertools.count(start=pageRange[0], end=pageRange[1])
+        elif pageRange[0]:
+            iterator = itertools.count(start=pageRange[0])
         else:
             iterator = itertools.count(start=1)
 
@@ -149,9 +149,10 @@ class AO3Handler():
                 if next_button.find('span', attrs={'class': 'disabled'}):
                     print('disabled; breaking')
                     break
-            except:
+            except Exception as e:
                 # In case of absence of "next"
                 print('no next button')
+                print('Error: {}'.format(e))
                 break
 
         return soups
@@ -175,8 +176,14 @@ class AO3Handler():
         if req.status_code == 404:
             raise WorkNotFound('Unable to find a work with id %r' % work_id)
         elif req.status_code != 200:
-            raise RuntimeError('Unexpected error from AO3 API: %r (%r)' % (
-                req.text, req.status_code))
+            if req.text == 'Retry later':
+                pause = str(input('Received error {}. Should I pause for 5 min and then try again? Enter y for yes: '.format(req.text)))
+                if pause == 'y':
+                    time.sleep(300)
+                    self.get_work_soup(work_id)
+                else:
+                    raise RuntimeError('Unexpected error from AO3 API: %r (%r)' % (
+                        req.text, req.status_code))
 
         # For some works, AO3 throws up an interstitial page asking you to
         # confirm that you really want to see the adult works.  Yes, we do.

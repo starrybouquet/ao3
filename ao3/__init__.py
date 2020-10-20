@@ -2,6 +2,7 @@
 
 import requests
 import getpass
+import json
 import urllib.parse
 
 from .utils import *
@@ -29,14 +30,14 @@ class AO3(object):
         """
         return Work(id=id, io_handler=self.handler)
 
-    def tag(self, tag_name, load=False): # CURRENTLY DEAD
+    def tag(self, tag_name, load=False, save_while_loading=True, filename_template="html/{0}_html_{1}.txt", pageRange=(None,None)):
         """Get all works within a searchable tag on AO3.
         Returns a tuple (ids, soups)
         where ids is a list of all work IDs and soups is a list of all soups for that work
         If load=True, loads all works so that a list of works are returned in the tuple
             instead of a list of soups"""
         converted_tag = urllib.parse.quote(tag_name).replace('/', '*s*')
-        pages = self.handler.get_pages('', 'tags', tag=converted_tag)
+        pages = self.handler.get_pages('', 'tags', tag=converted_tag, save_while_loading=save_while_loading, filename_template=filename_template, pageRange=pageRange)
         soups = iterate_pages(pages, 'work', saveHTML=True)
         if load == True:
             works = [Work(id=id, io_handler=self.handler, load=False, soup=soup) for soup in soups]
@@ -44,20 +45,37 @@ class AO3(object):
         else:
             return soups
 
-    def to_csv(self, works, filename):
-        """Convert list of Work objects to a csv file."""
+    def load_from_html(self, filename_template, file_num_end, file_num_start=0):
+        """Load works from saved HTML of AO3 pages."""
+        soups = []
+        for n in range(file_num_start, file_num_end+1):
+            with open(filename_template.format(n), 'r') as f:
+                html = f.read()
+                soups.append(BeautifulSoup(html, 'html.parser'))
+        print("Loaded soups. Getting works.")
+
+        all_works_html = iterate_pages(soups, 'work', save_HTML=True)
+
+        all_works = []
+        for id, work in all_works_html.items():
+            work_item = Work(id, self.handler, load=False, soup=work)
+            all_works.append(work_item)
+
+        return all_works
+
+    def to_json(self, works, filename):
+        """Convert list of Work objects to a json file."""
+
+        json_data = {}
+        json_data['works'] = []
+
+        for work in works:
+            print('Writing work with id {}'.format(work.id))
+            item = work.json()
+            json_data['works'].append(item)
 
         with open(filename, 'w') as f:
-            columns = ['id', 'title', 'author', 'summary',
-            'rating', 'warnings', 'category', 'fandoms', 'relationship', 'characters', 'additional_tags',
-            'language', 'published', 'words', 'chapters_posted', 'chapters_total',
-            'comments', 'kudos', 'bookmarks', 'hits']
-            f.write(', '.join([c for c in columns]))
-            f.write('\n')
-            for work in works:
-                print('Writing work with id {}'.format(work.id))
-                csv_line = work.csv() + '\n'
-                f.write(csv_line)
+            json.dump(json_data, f)
 
         return filename
 
