@@ -25,6 +25,10 @@ assert (type(all_works_html) == dict)
 
 all_works = []
 for id, work in all_works_html.items():
-    all_works.append(Work(id, api.handler, load=False, soup=work))
-
-api.to_csv(all_works, '200_works.csv')
+    work_item = Work(id, api.handler, load=False, soup=work)
+    # print("chapters: {}".format(work_item.chapters_posted))
+    # print("total: {}".format(work_item.chapters_total))
+    all_works.append(work_item)
+c = input('do you want to continue?')
+if c == 'y':
+    api.to_csv(all_works, '200_works.csv')

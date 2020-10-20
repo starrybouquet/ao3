@@ -181,11 +181,14 @@ class Work(object):
             return a_tag[0].contents[0].strip()
         elif self._source == 'search':
             heading_tag = self._soup.find('h4', attrs={'class': 'heading'})
-            a_tag = [t
-                     for t in byline_tag.contents
-                     if isinstance(t, Tag)]
-            assert len(a_tag) == 1
-            return a_tag[0].contents[0].strip()
+            if 'archived by' in heading_tag.get_text():
+                author_and_archive = heading_tag.get_text().partition('by ')[2]
+                return author_and_archive.partition(' [')[0].strip()
+            headers = heading_tag.find_all('a')
+            if len(headers) > 1:
+                return headers[1].get_text().strip()
+            else:
+                return 'Anonymous'
 
     @property
     def summary(self):
@@ -354,48 +357,65 @@ class Work(object):
         try:
             chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
             if chapters_tag_contents[0] == '\n':
-                print('in if')
                 chapters = chapters_tag_contents[2].partition('/')[0]
-                return str(chapters)
             elif '1/' in chapters_tag_contents[0]:
-                print('in elif')
-                return '1'
+                chapters = '1'
             else:
-                print('in else')
                 chapters = chapters_tag_contents[0].get_text()
-                return str(chapters)
+
+            if (chapters.isdigit() == True) or (chapters == '?'):
+                return chapters
+            else:
+                print('Chapter was not a number or ?. Tag contents are as follows')
+                print(chapters_tag_contents)
+                x = str(input('Enter a value, or enter s to skip and return ?'))
+                if x == 's':
+                    return '?'
+                else:
+                    return x
         except Exception as e:
             print('Error: {}'.format(e))
             print('Chapter tag contents looks like: {}'.format(chapters_tag_contents))
-            x = str(input('Chapters posted cannot be found. Hit s to return default value ?, q to break'))
+            x = str(input('Chapters posted cannot be found. Hit s to return default value ?, q to break, e to enter value'))
             if x == 'q':
                 raise e
             elif x == 's':
                 return '?'
+            elif x == 'e':
+                return int(input('enter value: '))
 
     @property
     def chapters_total(self):
         try:
             chapters_tag_contents = self._soup.find('dd', attrs={'class': 'chapters'}).contents
             if chapters_tag_contents[0] == '\n':
-                print('in if')
                 total_chapters = chapters_tag_contents[2].partition('/')[2]
-                return str(total_chapters)
             elif '1/' in chapters_tag_contents[0]:
-                print('in elif')
-                return '1'
+                total_chapters = '1'
             else:
-                print('in else')
-                total_chapters = chapters_tag_contents[1].partition('/')[1]
-                return str(total_chapters)
+                total_chapters = chapters_tag_contents[1].partition('/')[2]
+
+            if (total_chapters.isdigit() == True) or (total_chapters == '?'):
+                return total_chapters
+            else:
+                print('Chapter was not a number or ?. tag contents are as follows')
+                print(chapters_tag_contents)
+                x = str(input('Enter a value, or enter s to skip and return ?'))
+                if x == 's':
+                    return '?'
+                else:
+                    return x
+
         except Exception as e:
             print('Error: {}'.format(e))
             print('Chapter tag contents looks like: {}'.format(chapters_tag_contents))
-            x = str(input('Chapters total cannot be found. Hit s to skip, q to break'))
+            x = str(input('Chapters total cannot be found. Hit s to skip, q to break, e to enter value.'))
             if x == 'q':
                 raise e
             elif x == 's':
                 return '?'
+            elif x == 'e':
+                return int(input('enter value: '))
 
     @property
     def comments(self):
@@ -522,8 +542,7 @@ class Work(object):
                     self.fandoms, self.relationship, self.characters, self.additional_tags,
                     self.language, self.published, self.words, self.chapters_posted, self.chapters_total,
                     self.comments, self.kudos, self.bookmarks, self.hits]
+            return ', '.join(['"{0}"'.format(str(item)) for item in data])
         except Exception as e:
             print('Exception while getting data of work with id {}.'.format(self.id))
-            input('do you want to do soumething about it')
-
-        return ', '.join(['"{0}"'.format(str(item)) for item in data])
+            raise e
