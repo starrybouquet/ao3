@@ -71,7 +71,7 @@ class AO3(object):
         for work in works:
             print('Writing work with id {}'.format(work.id))
             item = work.json()
-            json_data[work.id].append(item)
+            json_data[work.id] = item
 
         with open(filename, 'w') as f:
             json.dump(json_data, f)

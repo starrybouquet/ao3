@@ -105,7 +105,7 @@ class AO3Handler():
         """
         api_url = self.page_urls[type]
 
-        # soups = [] # list of html soups saved
+        soups = [] # list of html soups saved
         num_soups = 0
 
         if pageRange[0] and pageRange[1]:
@@ -125,11 +125,11 @@ class AO3Handler():
             if type == 'tags':
                 url = api_url.format(tag, page_no)
             else:
-                url = api_url.format(usernam, page_no)
+                url = api_url.format(username, page_no)
 
             req = self.sess.get(url)
             soup = BeautifulSoup(req.text, features='html.parser')
-            if save:
+            if save_while_loading:
                 filename = filename_template.format(type, page_no)
                 with open(filename, "w") as f:
                     plain_html = str(soup)

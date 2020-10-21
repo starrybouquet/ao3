@@ -1,5 +1,6 @@
 import re
 import collections
+import datetime
 
 from .handlers import AO3Handler
 from .works import iterate_pages, Work
@@ -160,7 +161,7 @@ class User(object):
             #       ...
             #     </ol>
             #
-            ol_tag = soup.find('ol', attrs={'class': 'reading'})
+            ol_tag = page.find('ol', attrs={'class': 'reading'})
             for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
                 try:
                     work_id = li_tag.attrs['id'].replace('work_', '')

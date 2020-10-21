@@ -127,7 +127,7 @@ class Work(object):
         return self.id == other.id
 
     def __ne__(self, other):
-        return not (self == other)
+        return not (self.id == other.id)
 
     def __hash__(self):
         return hash(repr(self))
