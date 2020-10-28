@@ -497,6 +497,14 @@ class Work(object):
         """The number of hits this work has received."""
         return int(self._lookup_stat('hits', 0))
 
+    def get_work_text(self):
+        """Returns string of entire work text"""
+        if self._source != 'work':
+            self.load_data()
+
+        work_body = self._soup.find('div', attrs={'class': 'userstuff'})
+        return work_body.text
+
     def json(self, *args, **kwargs):
         """Provide a complete representation of the work in JSON.
 
