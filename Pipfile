@@ -9,6 +9,7 @@ verify_ssl = true
 requests = "*"
 markovify = "*"
 bs4 = "*"
+jupyter = "*"
 
 [requires]
 python_version = "3.8"
