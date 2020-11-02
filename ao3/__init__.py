@@ -5,6 +5,8 @@ import getpass
 import json
 import urllib.parse
 
+from bs4 import BeautifulSoup
+
 from .utils import *
 from .users import User
 from .works import Work, iterate_pages
@@ -45,13 +47,18 @@ class AO3(object):
         else:
             return soups
 
-    def load_from_html(self, filename_template, file_num_end, file_num_start=0):
+    def load_from_html(self, filename=None, filename_template=None, file_num_end=0, file_num_start=0):
         """Load works from saved HTML of AO3 pages."""
         soups = []
-        for n in range(file_num_start, file_num_end+1):
-            with open(filename_template.format(n), 'r') as f:
+        if filename:
+            with open(filename, 'r') as f:
                 html = f.read()
                 soups.append(BeautifulSoup(html, 'html.parser'))
+        elif filename_template:
+            for n in range(file_num_start, file_num_end+1):
+                with open(filename_template.format(n), 'r') as f:
+                    html = f.read()
+                    soups.append(BeautifulSoup(html, 'html.parser'))
         print("Loaded soups. Getting works.")
 
         all_works_html = iterate_pages(soups, 'work', save_HTML=True)

@@ -35,12 +35,13 @@ def iterate_pages(page_soups, class_name, save_HTML=False):
         #     </o
         try:
             ol_tag = page.find('ol', attrs={'class': class_name})
+            li_tags = ol_tag.findAll('li', attrs={'class': 'blurb'})
         except Exception as e:
             print(ol_tag)
             return e
 
 
-        for li_tag in ol_tag.findAll('li', attrs={'class': 'blurb'}):
+        for li_tag in li_tags:
             num_works = num_works + 1
             try:
                 # <h4 class="heading">
@@ -255,8 +256,19 @@ class Work(object):
         return [t.contents[0] for t in a_tags]
 
     def _lookup_stat_icon(self, icon_class):
+        """For finding stats in the four icons in a search result"""
         icon_span = self._soup.find('span', attrs={'class': icon_class})
         return [t.strip() for t in icon_span['title'].split(',')]
+
+    def _lookup_stat_taglist(self, tag_class, default):
+        """For finding classes of tags within a search result"""
+        all_tags = self._soup.find('ul', attrs={'class': 'tags'})
+        matching_tags = all_tags.findAll('li', attrs={'class': tag_class})
+        tags = [li_tag.text.strip() for li_tag in matching_tags]
+        if len(tags) > 0:
+            return tags
+        else:
+            return default
 
     @property
     def rating(self):
@@ -298,17 +310,25 @@ class Work(object):
     @property
     def relationship(self):
         """The relationships in this work."""
-        return self._lookup_stat('relationship', [])
-
+        if self._source == 'work':
+            return self._lookup_stat('relationship', [])
+        elif self._source == 'search':
+            return self._lookup_stat_taglist('relationships', [])
     @property
     def characters(self):
         """The characters in this work."""
-        return self._lookup_stat('character', [])
+        if self._source == 'work':
+            return self._lookup_stat('character', [])
+        elif self._source == 'search':
+            return self._lookup_stat_taglist('characters', [])
 
     @property
     def additional_tags(self):
         """Any additional tags on the work."""
-        return self._lookup_stat('freeform', [])
+        if self._source == 'work':
+            return self._lookup_stat('freeform', [])
+        elif self._source == 'search':
+            return self._lookup_stat_taglist('freeforms', [])
 
     @property
     def language(self):
@@ -554,3 +574,11 @@ class Work(object):
     #     except Exception as e:
     #         print('Exception while getting data of work with id {}.'.format(self.id))
     #         raise e
+
+class JSONWork(Work):
+    """Work loaded from a json file"""
+
+    def __init__(self, json):
+        pass
+
+    # need new functions for getting each property that does not rely on HTML

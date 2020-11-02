@@ -36,6 +36,7 @@ class User(object):
     def __init__(self, username, handler):
         self.username = username
         self.io_handler = handler
+        self._bookmarks_loaded = False
 
     def __repr__(self):
         return '%s(username=%r)' % (type(self).__name__, self.username)
@@ -76,9 +77,11 @@ class User(object):
 
         bookmarks = []
         num_works = 0
+        if page_soups == None:
+            page_soups = self.io_handler.get_pages('starrybouquet', 'bookmarks')
 
+        bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=True)
         if load: # load works from given HTML - no I/O required
-            bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=True)
             bookmarks = []
 
             for id, html in bookmarks_data.items():
@@ -90,8 +93,7 @@ class User(object):
                 # print (str(bookmark_total) + "\t bookmarks found.")
             return bookmarks
 
-        else: # just return IDs
-            bookmarks_data = iterate_pages(page_soups, 'bookmark', save_HTML=False)
+        else: # just return IDs and html
             return bookmarks_data
 
     def load_bookmarks(self):
