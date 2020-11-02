@@ -68,23 +68,22 @@ def create_model():
     current_data = ''
     for line in raw_data:
         if ending_bookmark:
-            print('Bookmark is ending')
+            # print('Bookmark is ending')
             ending_bookmark = False
             parts = line.partition('>')
             current_data += parts[0]
             current_data += parts[1]
-            print('Partitioned line: {}'.format(parts))
+            # print('Partitioned line: {}'.format(parts))
             bookmark_data[current_id] = current_data # add tag to dict
-            print('Assigned current data to id {}'.format(current_id))
+            # print('Assigned current data to id {}'.format(current_id))
             current_id = parts[2].strip() # assign next id
-            print('Assigned next id as {}'.format(current_id))
+            # print('Assigned next id as {}'.format(current_id))
             current_data = ''
         else:
             current_data += line
             if '<div class="recent dynamic"' in line:
                 ending_bookmark = True
-                print('Turned on ending bookmark')
-    print(bookmark_data['26777875'])
+                # print('Turned on ending bookmark')
     input()
     all_works = []
     for id, html in bookmark_data.items():
@@ -95,23 +94,20 @@ def create_model():
     matching_works = []
     for work in all_works:
         ship = set(work.relationship)
-        print('Ship tags: {}'.format(work.relationship))
         intersection = possible_tags.intersection(ship)
-        print('Intersection: {}'.format(intersection))
         if len(intersection) > 0:
             matching_works.append(work)
-            print('Appended work')
     print('Works matching tags: ')
     print(len(matching_works))
-    print(matching_works)
     input('Press Enter to continue: ')
     print()
-    models_built = 0
+    models_built = 1
     for work in matching_works:
+        print('Building model {}...'.format(models_built))
         if models_built % 20 == 0:
             print('{} models built, sleeping 3 min'.format(models_built))
             time.sleep(180)
-        models = add_work_to_chain(id, models)
+        models = add_work_to_chain(work, models)
         models_built += 1
 
     full_model = combine_models(models)
