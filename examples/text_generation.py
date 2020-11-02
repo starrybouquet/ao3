@@ -21,7 +21,7 @@ def add_work_to_chain(work, models, state_size=3):
     with given ID to the dict models and returns said dict'''
     text = work.get_work_text()
     model = markovify.Text(text, state_size=state_size)
-    models[id] = model
+    models[str(work.id)] = model
     print('Added work {} to models.'.format(work.title))
 
     return models
@@ -33,7 +33,7 @@ def combine_models(models, weights=None):
         model = markovify.combine(list(models.items()), weights)
     return model.compile()
 
-def create_model():
+def create_models():
 
     models = {} # each entry is id: model
     ids = []
@@ -84,7 +84,8 @@ def create_model():
             if '<div class="recent dynamic"' in line:
                 ending_bookmark = True
                 # print('Turned on ending bookmark')
-    input()
+    print('Logging in...')
+    api.login('starrybouquet')
     all_works = []
     for id, html in bookmark_data.items():
         soup = BeautifulSoup(html, 'html.parser')
@@ -100,17 +101,42 @@ def create_model():
     print('Works matching tags: ')
     print(len(matching_works))
     input('Press Enter to continue: ')
-    print()
     models_built = 1
     for work in matching_works:
         print('Building model {}...'.format(models_built))
-        if models_built % 20 == 0:
+        if models_built % 40 == 0:
             print('{} models built, sleeping 3 min'.format(models_built))
             time.sleep(180)
         models = add_work_to_chain(work, models)
         models_built += 1
+    print('Done building models.')
+    print('keys of model dict:')
+    print(models.keys())
+    json_models = {}
+    models_list = []
+    for id, model in models.items():
+        json_model = model.to_json()
+        json_models[id] = json_model
+    for id, data in json_model.items():
+        with open('work_models/model_{}.json'.format(id), 'w') as f:
+            f.write(data)
+    with open('work_models/_ids.txt', 'w') as file:
+        file.write(list(json_models.keys()))
 
-    full_model = combine_models(models)
+
+def combine_json_models():
+    # load
+    with open('work_models.json', 'r') as f:
+        models_from_json = json.loads(f.read())
+    modelList = []
+    models = {}
+    for id, model_json in models_from_json.items():
+        json_data = markovify.Text.from_json(model_json)
+        modelList.append(actual_model)
+        models[str(id)] = actual_model
+
+    # combine
+    full_model = combine_models(modelList)
     num_sentences = int(input('Enter # of sentences to try: '))
     for i in range(num_sentences):
         print(full_model.make_sentence())
@@ -124,4 +150,4 @@ def create_model():
         print('Saved file. IDs used were:')
         print(ids)
 
-create_model()
+create_models()
