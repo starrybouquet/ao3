@@ -1,13 +1,13 @@
 import re
 import collections
-import datetime
+from datetime import datetime
 
 from .handlers import AO3Handler
 from .works import iterate_pages, Work
 
 
 ReadingHistoryItem = collections.namedtuple(
-    'ReadingHistoryItem', ['work_id', 'last_read'])
+    'ReadingHistoryItem', ['work_id', 'title', 'last_read', 'word_count'])
 
 
 class User(object):
@@ -136,7 +136,7 @@ class User(object):
         -------
         list
             List of ``ReadingHistoryItem`` instances,
-            a 2-tuple ``(work_id, last_read)``.
+            a 4-tuple ``(work_id, title, last_read, word_count)``.
 
         """
         # TODO: What happens if you don't have this feature enabled?
@@ -183,8 +183,11 @@ class User(object):
                         r'[0-9]{1,2} [A-Z][a-z]+ [0-9]{4}',
                         h4_tag.contents[2]).group(0)
                     date = datetime.strptime(date_str, '%d %b %Y').date()
+                    h4_title = self._soup.find('h4', attrs={'class': 'heading'})
+                    title = h4_title.find_all('a')[0].get_text().strip()
+                    word_count = li_tag.find('dd', attrs={'class': 'words'}).text
 
-                    history_items.append(ReadingHistoryItem(work_id, date))
+                    history_items.append(ReadingHistoryItem(work_id, title, date, word_count))
                 except KeyError:
                     # A deleted work shows up as
                     #
