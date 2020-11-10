@@ -10,6 +10,7 @@ requests = "*"
 markovify = "*"
 bs4 = "*"
 jupyter = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.8"
