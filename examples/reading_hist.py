@@ -13,7 +13,7 @@ from ao3.works import Work, iterate_pages
 api = ao3.AO3()
 
 api.login('starrybouquet')
-history = api.user.reading_history()
+history = api.user.reading_history(save=True)
 
 def wrap_items(l):
     return ['"' + str(i) + '"' for i in l]

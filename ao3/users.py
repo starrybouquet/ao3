@@ -125,7 +125,7 @@ class User(object):
 
         return bookmarks
 
-    def reading_history(self):
+    def reading_history(self, hist_pages=None, save=False):
         """User.reading_history() --> list
 
         Returns a list of articles in the user's reading history.
@@ -145,8 +145,15 @@ class User(object):
         api_url = (
             'https://archiveofourown.org/users/%s/readings?page=%%d' %
             self.username)
+        if hist_pages == None:
+            hist_pages = self.io_handler.get_pages(self.username, 'history')
 
-        hist_pages = self.io_handler.get_pages(self.username, 'history')
+        if save:
+            with open('data/hist.txt', 'w') as f:
+                for page in hist_pages:
+                    f.write(str(page) + '\n\n\n')
+            print('Saved data in hist.txt file')
+
         history_items = []
 
         for page in hist_pages:
@@ -183,8 +190,14 @@ class User(object):
                         r'[0-9]{1,2} [A-Z][a-z]+ [0-9]{4}',
                         h4_tag.contents[2]).group(0)
                     date = datetime.strptime(date_str, '%d %b %Y').date()
-                    h4_title = self._soup.find('h4', attrs={'class': 'heading'})
-                    title = h4_title.find_all('a')[0].get_text().strip()
+                    h4_title = li_tag.find('h4', attrs={'class': 'heading'})
+                    try:
+                        title = h4_title.a.text
+                    except AttributeError as e:
+                        print('Error:')
+                        print(e)
+                        print('h4 was {}'.format(h4_title))
+                        input()
                     word_count = li_tag.find('dd', attrs={'class': 'words'}).text
 
                     history_items.append(ReadingHistoryItem(work_id, title, date, word_count))
