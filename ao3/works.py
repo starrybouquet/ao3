@@ -525,6 +525,15 @@ class Work(object):
         work_body = self._soup.find('div', attrs={'class': 'userstuff'})
         return work_body.text
 
+    def export_to_pdf(self):
+        pass 
+
+    def export_to_epub(self):
+        pass 
+
+    def export_to_html(self):
+        pass
+
     def json(self, *args, **kwargs):
         """Provide a complete representation of the work in JSON.
 
