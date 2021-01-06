@@ -11,7 +11,7 @@ def local_file(name):
     return os.path.relpath(os.path.join(os.path.dirname(__file__), name))
 
 
-SOURCE = local_file('src')
+SOURCE = local_file('ao3')
 README = local_file('README.md')
 long_description = codecs.open(README, encoding='utf-8').read()
 
