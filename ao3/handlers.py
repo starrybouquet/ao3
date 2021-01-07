@@ -4,7 +4,10 @@ import time
 
 from bs4 import BeautifulSoup
 
-class AO3Handler():
+from . import RestrictedWork, WorkNotFound
+
+
+class AO3Handler(object):
     """Handler for pulling AO3 data.
 
     Parameters
@@ -171,7 +174,7 @@ class AO3Handler():
             Soup of work.
 
         """
-        req = self.sess.get('https://archiveofourown.org/works/%s' % work_id)
+        req = self.sess.get('https://archiveofourown.org/works/%s?view_adult=true' % work_id)
 
         if req.status_code == 404:
             raise WorkNotFound('Unable to find a work with id %r' % work_id)

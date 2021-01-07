@@ -97,3 +97,11 @@ class AO3(object):
         password = getpass.getpass('Password: ')
         self.user = User(username=username, handler=self.handler)
         print(self.handler.login(username, password))
+
+
+class WorkNotFound(Exception):
+    pass
+
+
+class RestrictedWork(Exception):
+    pass

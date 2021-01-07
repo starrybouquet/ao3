@@ -103,16 +103,22 @@ class Work(object):
 
     """
 
-    def __init__(self, id, io_handler, load=True, soup=None):
+    def __init__(self, id, io_handler=None, load=None, soup=None):
         self.id = id
 
         self._io_handler = io_handler
 
         self.id = id
 
-        if load == True:
+        # Allows load to default to False if soup is not None, but True otherwise
+        if load is None and soup is None:
+            load = True
+        elif load is None:
+            load = False
+
+        if load:
             self.load_data()
-        elif soup != None:
+        elif soup is not None:
             self._soup = soup
             self._html = str(self._soup)
             self._source = 'search'
