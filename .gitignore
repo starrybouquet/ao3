@@ -1,3 +1,6 @@
+# Currently ignoring other_sources dir
+ao3/other_sources/
+ao3/other_sources/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

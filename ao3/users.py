@@ -15,7 +15,7 @@ class User(object):
         AO3 username.
     password : str
         AO3 password. Does not check if it is correct.
-    public_handler : AO3PublicHandler()
+    public_handler : AO3Handler()
         Public handler for loading works, etc.
     sess : Session
         requests Session to use
@@ -29,7 +29,7 @@ class User(object):
 
     """
 
-    def __init__(self, username: str, handler:AO3Handler):
+    def __init__(self, username: str, handler: AO3Handler):
         self.username = username
         self.io_handler = handler
         self._bookmarks_loaded = False
