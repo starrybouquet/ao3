@@ -2,7 +2,16 @@
 """Utility functions."""
 
 import re
+import collections
+from typing import List
+
 from bs4 import BeautifulSoup
+
+# Defining named tuples and types
+ReadingHistoryItem = collections.namedtuple(
+    'ReadingHistoryItem', ['work_id', 'title', 'last_read', 'word_count'])
+
+SoupList = List[BeautifulSoup]
 
 # Regex for extracting the work ID from an AO3 URL.  Designed to match URLs
 # of the form

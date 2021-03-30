@@ -1,13 +1,14 @@
 # -*- encoding: utf-8
 
-from datetime import datetime
+from ao3.utils import SoupList
+from datetime import date, datetime
 import json
 
 from bs4 import BeautifulSoup, Tag
 
 from .handlers import AO3Handler
 
-def iterate_pages(page_soups, class_name, save_HTML=False):
+def iterate_pages(page_soups: SoupList, class_name: str, save_HTML: bool=False):
     """Iterate over pages of lists of works.
     Options for class_name: 'bookmark'
                             'work'
@@ -83,7 +84,7 @@ class Work(object):
         Work id.
     [io_handler] : AO3PublicHandler object; default None
         Public handler for accessing data of work.
-    [load] : bool; default True
+    [load] : bool; default False
         If true, loads work data using I/O handler on init.
         Otherwise, does not load until load_data is called explicitly.
         This allows for full separation of I/O and parsing.
@@ -103,7 +104,7 @@ class Work(object):
 
     """
 
-    def __init__(self, id, io_handler=None, load=None, soup=None):
+    def __init__(self, id: str, io_handler: AO3Handler=None, load: bool=False, soup: BeautifulSoup=None):
         self.id = id
 
         self._io_handler = io_handler
@@ -151,12 +152,12 @@ class Work(object):
             raise e
 
     @property
-    def url(self):
+    def url(self) -> str:
         """A URL to this work."""
         return 'https://archiveofourown.org/works/%s' % self.id
 
     @property
-    def title(self):
+    def title(self) -> str:
         """The title of this work."""
         if self._source == 'work':
         # The title of the work is stored in an <h2> tag of the form
@@ -171,7 +172,7 @@ class Work(object):
             return heading_tag.find_all('a')[0].get_text().strip()
 
     @property
-    def author(self):
+    def author(self) -> str:
         """The author of this work."""
         if self._source == 'work':
             # The author of the work is kept in the byline, in the form
@@ -198,7 +199,7 @@ class Work(object):
                 return 'Anonymous'
 
     @property
-    def summary(self):
+    def summary(self) -> str:
         """The author summary of the work."""
         # The author summary is kept in the following format:
         #
@@ -219,7 +220,7 @@ class Work(object):
         else: # blockquote will throw an error if author put no summary so just return none instead
             return ''
 
-    def _lookup_stat(self, class_name, default=None, linked=False):
+    def _lookup_stat(self, class_name: str, default: str=None, linked=False) -> list:
         """Returns the value of a stat."""
         # The stats are stored in a series of divs of the form
         #
@@ -239,7 +240,7 @@ class Work(object):
             # return dd_tag.contents[0].strip("\n").strip()
             return dd_tag.contents[0].strip()
 
-    def _lookup_list_stat(self, dd_tag):
+    def _lookup_list_stat(self, dd_tag: BeautifulSoup) -> list:
         """Returns the value of a list statistic.
 
         Some statistics can have multiple values (e.g. the list of characters).
@@ -261,12 +262,12 @@ class Work(object):
         a_tags = [t.contents[0] for t in li_tags]
         return [t.contents[0] for t in a_tags]
 
-    def _lookup_stat_icon(self, icon_class):
+    def _lookup_stat_icon(self, icon_class: str) -> list:
         """For finding stats in the four icons in a search result"""
         icon_span = self._soup.find('span', attrs={'class': icon_class})
         return [t.strip() for t in icon_span['title'].split(',')]
 
-    def _lookup_stat_taglist(self, tag_class, default):
+    def _lookup_stat_taglist(self, tag_class: str, default) -> list:
         """For finding classes of tags within a search result"""
         all_tags = self._soup.find('ul', attrs={'class': 'tags'})
         matching_tags = all_tags.findAll('li', attrs={'class': tag_class})
@@ -277,7 +278,7 @@ class Work(object):
             return default
 
     @property
-    def rating(self):
+    def rating(self) -> str:
         """The age rating for this work."""
         if self._source == 'work':
             return self._lookup_stat('rating', [])
@@ -285,7 +286,7 @@ class Work(object):
             return self._lookup_stat_icon('rating')
 
     @property
-    def warnings(self):
+    def warnings(self) -> list:
         """Any archive warnings on the work."""
         if self._source == 'work':
             value = self._lookup_stat('warning', [])
@@ -297,7 +298,7 @@ class Work(object):
             return value
 
     @property
-    def category(self):
+    def category(self) -> list:
         """The category of the work."""
         if self._source == 'work':
             return self._lookup_stat('category', [])
@@ -305,7 +306,7 @@ class Work(object):
             return self._lookup_stat_icon('category')
 
     @property
-    def fandoms(self):
+    def fandoms(self) -> list:
         """The fandoms in this work."""
         if self._source == 'work':
             return self._lookup_stat('fandom', [])
@@ -314,14 +315,14 @@ class Work(object):
             return fandom_tag.a.get_text().strip()
 
     @property
-    def relationship(self):
+    def relationship(self) -> list:
         """The relationships in this work."""
         if self._source == 'work':
             return self._lookup_stat('relationship', [])
         elif self._source == 'search':
             return self._lookup_stat_taglist('relationships', [])
     @property
-    def characters(self):
+    def characters(self) -> list:
         """The characters in this work."""
         if self._source == 'work':
             return self._lookup_stat('character', [])
@@ -329,7 +330,7 @@ class Work(object):
             return self._lookup_stat_taglist('characters', [])
 
     @property
-    def additional_tags(self):
+    def additional_tags(self) -> list:
         """Any additional tags on the work."""
         if self._source == 'work':
             return self._lookup_stat('freeform', [])
@@ -337,12 +338,12 @@ class Work(object):
             return self._lookup_stat_taglist('freeforms', [])
 
     @property
-    def language(self):
+    def language(self) -> str:
         """The language in which this work is published."""
         return self._lookup_stat('language', "").strip()
 
     @property
-    def published(self):
+    def published(self) -> date:
         """The date when this work was published."""
         if self._source == 'work':
             date_str = self._lookup_stat('published')
@@ -353,7 +354,7 @@ class Work(object):
         return date_val.date()
 
     @property
-    def words(self):
+    def words(self) -> int:
         """The number of words in this work."""
         return int(self._lookup_stat('words', 0).replace(',',''))
 
@@ -453,7 +454,7 @@ class Work(object):
 
 
     @property
-    def kudos(self):
+    def kudos(self) -> int:
         """The number of kudos on this work."""
         if self._source == "work":
             return int(self._lookup_stat('kudos', default='0').replace(',',''))
@@ -461,12 +462,12 @@ class Work(object):
             return int(self._lookup_stat('kudos', default='0', linked=True).replace(',',''))
 
     @property
-    def complete(self):
+    def complete(self) -> str:
         """Returns True if posted chapters = total chapters, False if not"""
         return (str(self.posted_chapters) == str(self.total_chapters))
 
     @property
-    def kudos_left_by(self):
+    def kudos_left_by(self) -> list:
         """Returns a list of usernames who left kudos on this work.
         requires work to be loaded, as the kudos left are not available on the search result"""
         # The list of usernames who left kudos is stored in the following
@@ -508,7 +509,7 @@ class Work(object):
             yield a_tag.attrs['href'].replace('/users/', '')
 
     @property
-    def bookmarks(self):
+    def bookmarks(self) -> int:
         """The number of times this work has been bookmarked."""
         # This returns a link of the form
         #
@@ -519,11 +520,11 @@ class Work(object):
         return int(self._lookup_stat('bookmarks', 0, True))
 
     @property
-    def hits(self):
+    def hits(self) -> int:
         """The number of hits this work has received."""
         return int(self._lookup_stat('hits', 0))
 
-    def get_work_text(self):
+    def get_work_text(self) -> str:
         """Returns string of entire work text"""
         if self._source != 'work':
             self.load_data()
@@ -540,7 +541,7 @@ class Work(object):
     def export_to_html(self):
         pass
 
-    def json(self, *args, **kwargs):
+    def json(self, *args, **kwargs) -> json:
         """Provide a complete representation of the work in JSON.
 
         *args and **kwargs are passed directly to `json.dumps()` from the
@@ -593,7 +594,7 @@ class Work(object):
 class JSONWork(Work):
     """Work loaded from a json file"""
 
-    def __init__(self, json):
+    def __init__(self, json: json):
         pass
 
     # need new functions for getting each property that does not rely on HTML

@@ -1,13 +1,9 @@
 import re
-import collections
 from datetime import datetime
 
+from .utils import ReadingHistoryItem, SoupList
 from .handlers import AO3Handler
 from .works import iterate_pages, Work
-
-
-ReadingHistoryItem = collections.namedtuple(
-    'ReadingHistoryItem', ['work_id', 'title', 'last_read', 'word_count'])
 
 
 class User(object):
@@ -33,7 +29,7 @@ class User(object):
 
     """
 
-    def __init__(self, username, handler):
+    def __init__(self, username: str, handler:AO3Handler):
         self.username = username
         self.io_handler = handler
         self._bookmarks_loaded = False
@@ -62,7 +58,7 @@ class User(object):
 
         return bookmarks
 
-    def bookmarks(self, load=False, page_soups=None):
+    def bookmarks(self, load: bool = False, page_soups: SoupList = None) -> list:
         """User.bookmark_ids() --> list
 
         Returns a list of the user's bookmarks' ids. Ignores external work bookmarks.
@@ -125,7 +121,7 @@ class User(object):
 
         return bookmarks
 
-    def reading_history(self, hist_pages=None, save=False):
+    def reading_history(self, hist_pages: list = None, save: bool = False) -> list:
         """User.reading_history() --> list
 
         Returns a list of articles in the user's reading history.

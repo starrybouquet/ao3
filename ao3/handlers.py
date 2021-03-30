@@ -5,6 +5,7 @@ import time
 from bs4 import BeautifulSoup
 
 from . import RestrictedWork, WorkNotFound
+from .utils import SoupList
 
 
 class AO3Handler(object):
@@ -33,7 +34,7 @@ class AO3Handler(object):
                 'tags': 'https://archiveofourown.org/tags/{0}/works?page={1}'}
 
 
-    def __init__(self, init_client, sess=None):
+    def __init__(self, init_client, sess: requests.Session = None):
         """AO3Handler(Session sess, AO3 init_client) --> AO3PublicHandler
 
         Parameters
@@ -51,14 +52,14 @@ class AO3Handler(object):
 
         self.init_client = init_client
 
-    def login(self, username, password):
+    def login(self, username: str, password: str) -> str:
         """AO3Handler.authenticate(str username, str password) --> str
 
         Parameters
         ----------
         username : str
             User username.
-        password : type
+        password : str
             User password (does not check if it is correct).
 
         Returns
@@ -87,7 +88,7 @@ class AO3Handler(object):
         else:
             return "Authentication successful. You are logged in."
 
-    def get_pages(self, username, type, tag='', save_while_loading=False, filename_template="html/{0}_html_{1}.txt", pageRange=(None,None)):
+    def get_pages(self, username: str, type: str, tag: str = '', save_while_loading: bool = False, filename_template: str = "html/{0}_html_{1}.txt", pageRange: tuple =(None,None)) -> SoupList:
         """AO3Handler.get_pages(str username, str type) --> list
         Returns list of BeautifulSoups of specified type of user pages. User must be logged in to see private bookmarks.
 
@@ -160,7 +161,7 @@ class AO3Handler(object):
 
         return soups
 
-    def get_work_soup(self, work_id):
+    def get_work_soup(self, work_id: str, output_type: type=BeautifulSoup):
         """Get the BeautifulSoup of a given work.
 
         Parameters
@@ -198,4 +199,4 @@ class AO3Handler(object):
         if 'This work is only available to registered users' in req.text:
             raise RestrictedWork('Looking at work ID {} requires login'.format(work_id))
 
-        return req.text
+        return output_type(req.text)
