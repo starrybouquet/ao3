@@ -4,7 +4,7 @@ import time
 
 from bs4 import BeautifulSoup
 
-from . import RestrictedWork, WorkNotFound
+# from . import RestrictedWork, WorkNotFound
 from .utils import SoupList
 
 
@@ -47,6 +47,7 @@ class AO3Handler(object):
 
         if sess == None:
             self.sess = requests.Session()
+            self.sess.headers.update({'User-agent': 'Mozilla/5.0 (compatible; unofficial AO3 API; +starrybouquet@gmail.com)'})
         else:
             self.sess = sess
 

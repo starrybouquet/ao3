@@ -22,6 +22,24 @@ class AO3(object):
     def __repr__(self):
         return '%s()' % (type(self).__name__)
 
+    # USER METHODS
+
+    def login(self, username):
+        """Log in to the archive.
+
+        This allows you to access pages that are only available while
+        logged in.  This doesn't do any checking that the password is correct.
+
+        """
+        password = getpass.getpass('Password: ')
+        self.user = User(username=username, handler=self.handler)
+        print(self.handler.login(username, password))
+
+    def get_user(self):
+        """Get the user object connected to this instance.
+        """
+        return self.user
+
     # WORK METHODS
 
     def work(self, id):
@@ -84,19 +102,6 @@ class AO3(object):
             json.dump(json_data, f)
 
         return filename
-
-    # USER METHODS
-
-    def login(self, username):
-        """Log in to the archive.
-
-        This allows you to access pages that are only available while
-        logged in.  This doesn't do any checking that the password is correct.
-
-        """
-        password = getpass.getpass('Password: ')
-        self.user = User(username=username, handler=self.handler)
-        print(self.handler.login(username, password))
 
 
 class WorkNotFound(Exception):
