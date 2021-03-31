@@ -29,7 +29,7 @@ class User(object):
 
     """
 
-    def __init__(self, username: str, handler: AO3Handler):
+    def __init__(self, username: str, handler:AO3Handler):
         self.username = username
         self.io_handler = handler
         self._bookmarks_loaded = False
