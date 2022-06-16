@@ -15,7 +15,7 @@ Following the advice of the following July 2020 note, I am attempting to restruc
 
 (via [alexwlchan](https://github.com/alexwlchan/ao3))
 
-**Note:** I am an engineering major, not a programmer, and I am much more comfortable with data science than with HTML or I/O. I also have very limited experience with creating usable packages. That being said, fandom analysis and history *is* very much my wheelhouse, so hopefully that interest makes up for some of my lack of knowledge. We'll see.
+**Note:** I am much more comfortable with data science than with HTML or I/O. I also have very limited experience with creating usable packages. That being said, fandom analysis and history *is* very much my wheelhouse, so hopefully that interest makes up for some of my lack of knowledge. We'll see.
 
 ## Motivation
 
